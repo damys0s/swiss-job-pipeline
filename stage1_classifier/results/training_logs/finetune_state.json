@@ -1,0 +1,10 @@
+{
+  "train_file_id": "file-39NP2yyPwaF5pchYUpsf4Z",
+  "val_file_id": "file-9E3zTbMYp6uqYT89jfT3jx",
+  "job_id": "ftjob-OCyBe6VAjQTZQcAGZjjtFYmr",
+  "last_status": "succeeded",
+  "created_at": "2026-03-02T18:20:09.593788",
+  "model_id": "ft:gpt-4o-mini-2024-07-18:personal:job-classifier:DF1fQqSZ",
+  "finished_at": "2026-03-02T19:02:33.271942",
+  "trained_tokens": 163578
+}

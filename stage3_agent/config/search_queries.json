@@ -1,0 +1,12 @@
+{
+  "queries": [
+    {"keywords": "data engineer", "location": "Lausanne"},
+    {"keywords": "data engineer", "location": "Geneva"},
+    {"keywords": "BI developer", "location": "Lausanne"},
+    {"keywords": "BI developer", "location": "Geneva"},
+    {"keywords": "data analyst", "location": "Lausanne"},
+    {"keywords": "DBA oracle", "location": "Geneva"},
+    {"keywords": "ETL developer", "location": "Vaud"},
+    {"keywords": "application support IT", "location": "Lausanne"}
+  ]
+}

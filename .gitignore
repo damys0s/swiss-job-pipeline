@@ -1,0 +1,41 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+build/
+dist/
+*.egg-info/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Données personnelles / artefacts temporaires
+stage3_agent/logs/runs/
+stage3_agent/data/email_preview.html
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Fichiers engagés volontairement (ne PAS exclure) :
+# - data/labeled/labeled_jobs.csv      → corpus annoté
+# - data/training/*.jsonl              → données d'entraînement
+# - data/vectorstore/jobs.index        → index FAISS
+# - data/vectorstore/jobs_meta.json    → métadonnées offres
+# - stage3_agent/data/seen_jobs.db     → historique déduplication (mis à jour par CI)
+# - stage1_classifier/results/         → résultats du fine-tuning

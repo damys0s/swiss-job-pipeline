@@ -1,0 +1,13 @@
+{
+  "title": "Data Engineer / BI Developer",
+  "skills": [
+    "SQL", "PL/SQL", "Oracle", "PostgreSQL", "SQL Server",
+    "Python", "Power BI", "Tableau",
+    "ETL", "Talend", "dbt",
+    "Azure", "data warehouse", "data modeling"
+  ],
+  "experience_years": 5,
+  "languages": ["French", "English", "Spanish"],
+  "locations_preferred": ["Lausanne", "Geneva", "Nyon", "Morges"],
+  "work_authorization": "EU citizen, Swiss work permit"
+}

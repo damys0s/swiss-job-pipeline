@@ -1,0 +1,602 @@
+[
+  {
+    "id": "ftevent-r00aTM1NkEQSIqigUrko53mr",
+    "created_at": 1772474431,
+    "level": "info",
+    "message": "The job has successfully completed"
+  },
+  {
+    "id": "ftevent-Ozicvu7dQeJw4q5m5qLQEd7O",
+    "created_at": 1772474428,
+    "level": "info",
+    "message": "Usage policy evaluations completed, model is now enabled for sampling"
+  },
+  {
+    "id": "ftevent-E1RveP7JxagCYJsVVJQWV2yt",
+    "created_at": 1772474428,
+    "level": "info",
+    "message": "Moderation checks for snapshot ft:gpt-4o-mini-2024-07-18:personal:job-classifier:DF1fQqSZ passed."
+  },
+  {
+    "id": "ftevent-HoIuru40InQtfTMn9Ymx8Xy5",
+    "created_at": 1772473700,
+    "level": "info",
+    "message": "Evaluating model against our usage policies"
+  },
+  {
+    "id": "ftevent-QehvuUd3jswjYrg4M8XOGy24",
+    "created_at": 1772473700,
+    "level": "info",
+    "message": "New fine-tuned model created"
+  },
+  {
+    "id": "ftevent-viHS3vlv6MDonq5uMfsgMSBx",
+    "created_at": 1772473700,
+    "level": "info",
+    "message": "Checkpoint created at step 558"
+  },
+  {
+    "id": "ftevent-dRbxmbNep3ZXQlP9iWNa2mpo",
+    "created_at": 1772473700,
+    "level": "info",
+    "message": "Checkpoint created at step 279"
+  },
+  {
+    "id": "ftevent-kUAjOclcYfBqafbWqonNEw46",
+    "created_at": 1772473653,
+    "level": "info",
+    "message": "Step 837/837: training loss=0.00, validation loss=0.00, full validation loss=0.00"
+  },
+  {
+    "id": "ftevent-4y8c3G9AYEUy8l0XgdUjUPH8",
+    "created_at": 1772473640,
+    "level": "info",
+    "message": "Step 836/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-rnRJdLuSEiZdVaJPZjGgd3V1",
+    "created_at": 1772473637,
+    "level": "info",
+    "message": "Step 835/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-wsiKFDeNeaT8kXpYJk57MNpK",
+    "created_at": 1772473637,
+    "level": "info",
+    "message": "Step 834/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-1Qqx0viSPeEQUYpXmbqwrCdZ",
+    "created_at": 1772473637,
+    "level": "info",
+    "message": "Step 833/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-XGNc112yBYrzoLwTy2BrJAXs",
+    "created_at": 1772473634,
+    "level": "info",
+    "message": "Step 832/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-p0a0dGnuwGSG5y55S3SfJDLF",
+    "created_at": 1772473634,
+    "level": "info",
+    "message": "Step 831/837: training loss=0.03"
+  },
+  {
+    "id": "ftevent-9NJSpZVQm8RCfUHHLOuN8sX2",
+    "created_at": 1772473631,
+    "level": "info",
+    "message": "Step 830/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-f0JsULJwi9fE8C5OnHUvfUZn",
+    "created_at": 1772473626,
+    "level": "info",
+    "message": "Step 829/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-OvUu43qwB0Y1sh35p5vFZcCH",
+    "created_at": 1772473626,
+    "level": "info",
+    "message": "Step 828/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-LYErBxnqB6WEW62Vba8vngfi",
+    "created_at": 1772473626,
+    "level": "info",
+    "message": "Step 827/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-j54mcciSZCm9j3yV0EUt5ZHR",
+    "created_at": 1772473623,
+    "level": "info",
+    "message": "Step 826/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-P4Uoqf5uHAVCX7nUMW7SnK3K",
+    "created_at": 1772473623,
+    "level": "info",
+    "message": "Step 825/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-4DOootKpsKVDUeZQ6g96b1j2",
+    "created_at": 1772473620,
+    "level": "info",
+    "message": "Step 824/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-RLqQcqkM2xkbsc8nFDE7ECJ1",
+    "created_at": 1772473620,
+    "level": "info",
+    "message": "Step 823/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-FjXqPURW8ckDsIpEWEKafLbI",
+    "created_at": 1772473620,
+    "level": "info",
+    "message": "Step 822/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-FEKFdjCSRxPOzCAWYLS1DZCa",
+    "created_at": 1772473617,
+    "level": "info",
+    "message": "Step 821/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-FBgVaUl8WIFkAUfqp1bUg19T",
+    "created_at": 1772473616,
+    "level": "info",
+    "message": "Step 820/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-5d61Wfx3uR3YvB3QeybrCVSR",
+    "created_at": 1772473611,
+    "level": "info",
+    "message": "Step 819/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-yll5iOGOCObC8acKNpHVqpJf",
+    "created_at": 1772473608,
+    "level": "info",
+    "message": "Step 818/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-XuxQzLK5sWFqCUMMOcONqwmM",
+    "created_at": 1772473608,
+    "level": "info",
+    "message": "Step 817/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-fVxfFqlrxQrtDvzfrHva7GWT",
+    "created_at": 1772473608,
+    "level": "info",
+    "message": "Step 816/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-mZnyI2c5IiqOJh3iW4J21XU3",
+    "created_at": 1772473605,
+    "level": "info",
+    "message": "Step 815/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-Oy6wCv8e8RxfSXbyd8IgSsnI",
+    "created_at": 1772473605,
+    "level": "info",
+    "message": "Step 814/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-YoARLglsDMzPRz5haMkVWSI2",
+    "created_at": 1772473603,
+    "level": "info",
+    "message": "Step 813/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-Dvw6MMWBLV32wNE6fKRZmLRU",
+    "created_at": 1772473603,
+    "level": "info",
+    "message": "Step 812/837: training loss=2.25"
+  },
+  {
+    "id": "ftevent-iupYQfO3cOj29E5iLp6zFgBU",
+    "created_at": 1772473603,
+    "level": "info",
+    "message": "Step 811/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-qnN3JaxMDuLXFSnZD09u6SJa",
+    "created_at": 1772473600,
+    "level": "info",
+    "message": "Step 810/837: training loss=1.96, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-8WHOqUX8a5UNdAHbTDQpZxMJ",
+    "created_at": 1772473594,
+    "level": "info",
+    "message": "Step 809/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-qTHNAn625hFfVO3mPTcwOANm",
+    "created_at": 1772473594,
+    "level": "info",
+    "message": "Step 808/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-bjavT4O69WlUBbcqSNRIA4is",
+    "created_at": 1772473591,
+    "level": "info",
+    "message": "Step 807/837: training loss=1.54"
+  },
+  {
+    "id": "ftevent-Y3Qk6lSVeGBAwj000zI2Cvnw",
+    "created_at": 1772473591,
+    "level": "info",
+    "message": "Step 806/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-ojRmrEU0u1EMo0DgQ6aLwzjI",
+    "created_at": 1772473591,
+    "level": "info",
+    "message": "Step 805/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-SPD5Tx4kPCcvHeFP4qaz5vJk",
+    "created_at": 1772473588,
+    "level": "info",
+    "message": "Step 804/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-B1yCg47i6n94ZaZbyTQzKlsA",
+    "created_at": 1772473588,
+    "level": "info",
+    "message": "Step 803/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-HVQqIgp2OidOejcOr2a1pG7W",
+    "created_at": 1772473588,
+    "level": "info",
+    "message": "Step 802/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-xBsLzlC7oCRQmmifnWKMvBiS",
+    "created_at": 1772473586,
+    "level": "info",
+    "message": "Step 801/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-IlwgoPkhY7tYY2H7uJI7Yq4M",
+    "created_at": 1772473585,
+    "level": "info",
+    "message": "Step 800/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-JLFpm5VTxZYTg6OIxMDPdzkF",
+    "created_at": 1772473580,
+    "level": "info",
+    "message": "Step 799/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-esnxDmsg8PL5Dw8YmCgdY0wy",
+    "created_at": 1772473577,
+    "level": "info",
+    "message": "Step 798/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-FgWM21q0dZwj11nclTQxozJn",
+    "created_at": 1772473577,
+    "level": "info",
+    "message": "Step 797/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-RGRDrSnry7Bs5dj7JWrIXNZ0",
+    "created_at": 1772473577,
+    "level": "info",
+    "message": "Step 796/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-yb3rk7F2T6YL6D0gVWRtj3LF",
+    "created_at": 1772473575,
+    "level": "info",
+    "message": "Step 795/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-iOtKAXkT9G2mEvCvMPH51TWx",
+    "created_at": 1772473574,
+    "level": "info",
+    "message": "Step 794/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-yNMMx4zNrCVVdUczGF7LFPh3",
+    "created_at": 1772473572,
+    "level": "info",
+    "message": "Step 793/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-kghdVMY8DjDRtXDWtQyrm0xA",
+    "created_at": 1772473572,
+    "level": "info",
+    "message": "Step 792/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-65fL33jgJ2yFeSanY6e40zzl",
+    "created_at": 1772473572,
+    "level": "info",
+    "message": "Step 791/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-AUJRZb0DZIIcQsweB5uQxz2y",
+    "created_at": 1772473569,
+    "level": "info",
+    "message": "Step 790/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-omTDrP4uT9RcSuS3jrwNnYAr",
+    "created_at": 1772473563,
+    "level": "info",
+    "message": "Step 789/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-RI0kXvaYLzEj93UMtIJiqBnz",
+    "created_at": 1772473563,
+    "level": "info",
+    "message": "Step 788/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-GnLDt3K3zFSQ11q04RFKecSd",
+    "created_at": 1772473560,
+    "level": "info",
+    "message": "Step 787/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-8SAHD2EMF40saiRH3Tdy60tm",
+    "created_at": 1772473560,
+    "level": "info",
+    "message": "Step 786/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-6H3cVc6vSV0ILzAwtO9PHeBD",
+    "created_at": 1772473558,
+    "level": "info",
+    "message": "Step 785/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-3VMMlVseW9aTw51HmjgPq8jI",
+    "created_at": 1772473558,
+    "level": "info",
+    "message": "Step 784/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-EzufgbyRwoMpS9alZAWyJQ0g",
+    "created_at": 1772473557,
+    "level": "info",
+    "message": "Step 783/837: training loss=1.60"
+  },
+  {
+    "id": "ftevent-tYEFw85IuwPkgc1zPQhK0ciZ",
+    "created_at": 1772473555,
+    "level": "info",
+    "message": "Step 782/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-1lzz6tipWUlwxMnSXtB1uUqy",
+    "created_at": 1772473555,
+    "level": "info",
+    "message": "Step 781/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-4gFR4HyX5AxO2CI4UtE2uLwP",
+    "created_at": 1772473552,
+    "level": "info",
+    "message": "Step 780/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-cLnEv3mcwzMHVjNa0WksU5rK",
+    "created_at": 1772473546,
+    "level": "info",
+    "message": "Step 779/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-j3A8P4M7YwD5QxQ217xwwjD6",
+    "created_at": 1772473546,
+    "level": "info",
+    "message": "Step 778/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-PhR6HsXwUPsErTejBy7Nzsp1",
+    "created_at": 1772473546,
+    "level": "info",
+    "message": "Step 777/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-cifVHIdqTt1SMy9D7LtD34ra",
+    "created_at": 1772473544,
+    "level": "info",
+    "message": "Step 776/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-LEJmi4gO7BRidEP8W6MNQZU6",
+    "created_at": 1772473541,
+    "level": "info",
+    "message": "Step 775/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-C5HJczeb3p3KOmG9GWD98AHA",
+    "created_at": 1772473541,
+    "level": "info",
+    "message": "Step 774/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-qbZtDNUO6N30Fq5j8a8edHG0",
+    "created_at": 1772473541,
+    "level": "info",
+    "message": "Step 773/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-iIqbMroEuwAr03xxgireT7ZD",
+    "created_at": 1772473538,
+    "level": "info",
+    "message": "Step 772/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-u11TsBvuOmUWLzItc7UJrP9F",
+    "created_at": 1772473538,
+    "level": "info",
+    "message": "Step 771/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-rdmFDBkdmH3svpDsPK9dbqt6",
+    "created_at": 1772473535,
+    "level": "info",
+    "message": "Step 770/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-jeR6RZsqxCRWoPcwAZxc2F0R",
+    "created_at": 1772473532,
+    "level": "info",
+    "message": "Step 769/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-NnlLrhl14IRrBjTgjnWAvvQf",
+    "created_at": 1772473529,
+    "level": "info",
+    "message": "Step 768/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-Ecp8WiZMPQPY9ouMQdCcvzZk",
+    "created_at": 1772473529,
+    "level": "info",
+    "message": "Step 767/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-PMMhj9lufSyLnVEupnq661mY",
+    "created_at": 1772473527,
+    "level": "info",
+    "message": "Step 766/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-SOMxWuAUJoKvUG4LzDo9dgz5",
+    "created_at": 1772473527,
+    "level": "info",
+    "message": "Step 765/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-TWHrpKC8ccoXz0BOQnEPIIZq",
+    "created_at": 1772473526,
+    "level": "info",
+    "message": "Step 764/837: training loss=1.75"
+  },
+  {
+    "id": "ftevent-AXXsm7GJgsw9pKYgabgcz7X4",
+    "created_at": 1772473524,
+    "level": "info",
+    "message": "Step 763/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-vvSnTMGdTIlBRlQdR6VFJIc8",
+    "created_at": 1772473524,
+    "level": "info",
+    "message": "Step 762/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-seI14e28YEhiDzDHcasrcLu2",
+    "created_at": 1772473524,
+    "level": "info",
+    "message": "Step 761/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-cKrRv8RX3QGWJjirsvDBJHmY",
+    "created_at": 1772473521,
+    "level": "info",
+    "message": "Step 760/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-xJlikxyz9cgkOaCQr2Zh8G39",
+    "created_at": 1772473515,
+    "level": "info",
+    "message": "Step 759/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-aAaav0YafxKCO9tkbTRIqG8p",
+    "created_at": 1772473515,
+    "level": "info",
+    "message": "Step 758/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-opMvq27xjO2AANaDugcsM7OK",
+    "created_at": 1772473513,
+    "level": "info",
+    "message": "Step 757/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-P3m3vQLpQ1zgJO1YMgLe35Oc",
+    "created_at": 1772473513,
+    "level": "info",
+    "message": "Step 756/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-ZnuEYRmWTSar4P4Z3wxEbk3W",
+    "created_at": 1772473510,
+    "level": "info",
+    "message": "Step 755/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-fFJXhQnyMvOOoGdzW4EIMEfD",
+    "created_at": 1772473510,
+    "level": "info",
+    "message": "Step 754/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-omrZ78t3wXYA5WZKubEZ9k3S",
+    "created_at": 1772473510,
+    "level": "info",
+    "message": "Step 753/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-bKlsLGK014Cw9xDilVzj6mvA",
+    "created_at": 1772473507,
+    "level": "info",
+    "message": "Step 752/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-AMpCCJEE2X0NmC2bmoyCfusR",
+    "created_at": 1772473507,
+    "level": "info",
+    "message": "Step 751/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-eJRyrOrDOFivueGDhJGkuPsQ",
+    "created_at": 1772473504,
+    "level": "info",
+    "message": "Step 750/837: training loss=0.00, validation loss=0.00"
+  },
+  {
+    "id": "ftevent-fpmRsL4GEVMh3AxQHcoCvrKc",
+    "created_at": 1772473501,
+    "level": "info",
+    "message": "Step 749/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-9JXUsF5Hero1OyO36c1Qk466",
+    "created_at": 1772473498,
+    "level": "info",
+    "message": "Step 748/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-hfLqslHZWIySm8fYF6VK1T7T",
+    "created_at": 1772473498,
+    "level": "info",
+    "message": "Step 747/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-wv0lxnphNhL5qnj0mBmTPyWf",
+    "created_at": 1772473496,
+    "level": "info",
+    "message": "Step 746/837: training loss=0.00"
+  },
+  {
+    "id": "ftevent-smpj7XRldyEsumQ9TDgdwrNv",
+    "created_at": 1772473496,
+    "level": "info",
+    "message": "Step 745/837: training loss=0.00"
+  }
+]

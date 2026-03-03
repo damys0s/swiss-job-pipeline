@@ -1,0 +1,55 @@
+name: Daily Job Alert
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 6h UTC = 7h CET (hiver) / 8h CEST (été)
+  workflow_dispatch:        # Déclenchement manuel pour tests
+
+jobs:
+  run-alert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Nécessaire pour git push (commit seen_jobs.db)
+
+    steps:
+      # 1. Checkout du repo (inclut data/vectorstore/ et stage3_agent/data/seen_jobs.db)
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Python 3.11 (compatible avec toutes les dépendances)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 3. Installation des dépendances du stage 3
+      - name: Install dependencies
+        run: pip install -r stage3_agent/requirements.txt
+
+      # 4. Run du pipeline
+      # PYTHONPATH=. expose shared/ à Python depuis la racine du repo.
+      # Le script ajoute aussi stage3_agent/ au sys.path pour config.settings.
+      - name: Run daily pipeline
+        run: PYTHONPATH=. python stage3_agent/src/pipeline.py
+        env:
+          ADZUNA_APP_ID:  ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          SERPAPI_KEY:    ${{ secrets.SERPAPI_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EMAIL_ADDRESS:  ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO:       ${{ secrets.EMAIL_TO }}
+
+      # 5. Commit de seen_jobs.db mis à jour
+      # La base SQLite est committée pour persister l'historique entre les runs.
+      # Note : logs/runs/*.json sont dans .gitignore → non committés.
+      - name: Commit seen_jobs.db
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stage3_agent/data/seen_jobs.db
+          git diff --staged --quiet || git commit -m "chore: update seen_jobs.db [$(date +%Y-%m-%d)]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,438 @@
+{
+  "timestamp": "2026-03-03T11:35:36.428272",
+  "n_questions": 25,
+  "top_k": 5,
+  "global": {
+    "hit_rate": 0.68,
+    "mean_mrr": 0.62,
+    "category_hit_rate": 0.8667
+  },
+  "by_difficulty": {
+    "easy": {
+      "hit_rate": 1.0,
+      "mean_mrr": 1.0,
+      "n": 5
+    },
+    "medium": {
+      "hit_rate": 0.6,
+      "mean_mrr": 0.5,
+      "n": 10
+    },
+    "hard": {
+      "hit_rate": 0.6,
+      "mean_mrr": 0.55,
+      "n": 10
+    }
+  },
+  "per_question": [
+    {
+      "id": "q01",
+      "question": "Quelles offres de data engineer sont disponibles ?",
+      "difficulty": "easy",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "data engineer",
+        "pipeline",
+        "ETL"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Data Engineer m/w (Ref.-Nr. 92306)",
+      "top1_score": 0.6665
+    },
+    {
+      "id": "q02",
+      "question": "Y a-t-il des postes BI analytics en Suisse romande ?",
+      "difficulty": "easy",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "BI",
+        "analytics",
+        "reporting"
+      ],
+      "expected_category": "BI_ANALYTICS",
+      "n_results": 5,
+      "top1_title": "Spécialiste système BI",
+      "top1_score": 0.6053
+    },
+    {
+      "id": "q03",
+      "question": "Quelles offres mentionnent Python comme compétence ?",
+      "difficulty": "easy",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Python"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "ML/Data Engineer (remote EU)",
+      "top1_score": 0.4563
+    },
+    {
+      "id": "q04",
+      "question": "Quelles offres mentionnent SQL ?",
+      "difficulty": "easy",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "SQL"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Senior SQL Engineer",
+      "top1_score": 0.5574
+    },
+    {
+      "id": "q05",
+      "question": "Y a-t-il des offres à Genève ?",
+      "difficulty": "easy",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Genève",
+        "Geneva"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Data Analyst (H/F)",
+      "top1_score": 0.4033
+    },
+    {
+      "id": "q06",
+      "question": "Quelles offres de data engineer demandent dbt ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 0.5,
+      "category_hit": true,
+      "expected_keywords": [
+        "dbt",
+        "data engineer"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Professional Data Scientist",
+      "top1_score": 0.6577
+    },
+    {
+      "id": "q07",
+      "question": "Y a-t-il des postes de Data Engineer qui ne demandent pas de cloud ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "data engineer"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Cloud Data Engineer (w/m/d)",
+      "top1_score": 0.6914
+    },
+    {
+      "id": "q08",
+      "question": "Quelles offres BI mentionnent Power BI ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Power BI"
+      ],
+      "expected_category": "BI_ANALYTICS",
+      "n_results": 5,
+      "top1_title": "Power BI Spezialist:in",
+      "top1_score": 0.6106
+    },
+    {
+      "id": "q09",
+      "question": "Quelles offres BI mentionnent Tableau ?",
+      "difficulty": "medium",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Tableau"
+      ],
+      "expected_category": "BI_ANALYTICS",
+      "n_results": 5,
+      "top1_title": "Senior BI Report Modeler/Developer 80-100% (m/w)",
+      "top1_score": 0.5358
+    },
+    {
+      "id": "q10",
+      "question": "Quelles sont les offres les plus récentes en data engineering ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 0.5,
+      "category_hit": true,
+      "expected_keywords": [
+        "data engineer"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Professional Data Scientist",
+      "top1_score": 0.5149
+    },
+    {
+      "id": "q11",
+      "question": "Quelles entreprises recrutent des profils data à Lausanne ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Lausanne"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Data Analytics Engineer (H/F/X)",
+      "top1_score": 0.5974
+    },
+    {
+      "id": "q12",
+      "question": "Y a-t-il des postes de DBA ou administrateur de base de données ?",
+      "difficulty": "medium",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": false,
+      "expected_keywords": [
+        "DBA",
+        "database",
+        "Oracle",
+        "SQL Server"
+      ],
+      "expected_category": "DBA_INFRA",
+      "n_results": 5,
+      "top1_title": "Data Analyst (H/F)",
+      "top1_score": 0.5625
+    },
+    {
+      "id": "q13",
+      "question": "Quelles offres mentionnent Spark ou Hadoop ?",
+      "difficulty": "medium",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": false,
+      "expected_keywords": [
+        "Spark",
+        "Hadoop"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 4,
+      "top1_title": "Compensation and Benefits Specialist and Data Analyst",
+      "top1_score": 0.303
+    },
+    {
+      "id": "q14",
+      "question": "Quelles offres sont ouvertes à des profils juniors ou sans expérience ?",
+      "difficulty": "medium",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "junior",
+        "débutant",
+        "stage",
+        "graduate"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Junior Data Migration",
+      "top1_score": 0.4275
+    },
+    {
+      "id": "q15",
+      "question": "Quelles offres mentionnent Airflow pour l'orchestration ?",
+      "difficulty": "medium",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Airflow"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Head Data Analytics & Digital Solutions (m/w/d) 80-100%",
+      "top1_score": 0.3536
+    },
+    {
+      "id": "q16",
+      "question": "Compare les offres BI qui demandent Power BI versus Tableau",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Power BI",
+        "Tableau"
+      ],
+      "expected_category": "BI_ANALYTICS",
+      "n_results": 5,
+      "top1_title": "Power BI Spezialist:in",
+      "top1_score": 0.5708
+    },
+    {
+      "id": "q17",
+      "question": "Quelles entreprises bancaires ou financières recrutent des data engineers à Genève ?",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 0.5,
+      "category_hit": true,
+      "expected_keywords": [
+        "banque",
+        "finance",
+        "Genève"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Data Scientist",
+      "top1_score": 0.5881
+    },
+    {
+      "id": "q18",
+      "question": "Compare les salaires ou taux d'occupation entre les offres BI à Lausanne et Genève",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "BI",
+        "Lausanne",
+        "Genève",
+        "salaire",
+        "%"
+      ],
+      "expected_category": "BI_ANALYTICS",
+      "n_results": 5,
+      "top1_title": "Spécialiste système BI",
+      "top1_score": 0.5847
+    },
+    {
+      "id": "q19",
+      "question": "Quelles offres demandent à la fois du Python et du SQL ?",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Python",
+        "SQL"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Data Analyst (H/F)",
+      "top1_score": 0.466
+    },
+    {
+      "id": "q20",
+      "question": "Y a-t-il des offres de data engineer en télétravail ou remote ?",
+      "difficulty": "hard",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "télétravail",
+        "remote",
+        "home office"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Senior Data Engineer - Genève",
+      "top1_score": 0.4937
+    },
+    {
+      "id": "q21",
+      "question": "Quelles offres mentionnent des certifications cloud (AWS, Azure, GCP) ?",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "AWS",
+        "Azure",
+        "GCP",
+        "cloud"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Cloud Data Engineer (w/m/d)",
+      "top1_score": 0.6546
+    },
+    {
+      "id": "q22",
+      "question": "Quelle est la différence entre les offres DATA_ENGINEERING et BI_ANALYTICS dans ce corpus ?",
+      "difficulty": "hard",
+      "hit": true,
+      "mrr": 1.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "data engineer",
+        "BI",
+        "analytics"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Data Analyst Support Intern",
+      "top1_score": 0.5533
+    },
+    {
+      "id": "q23",
+      "question": "Y a-t-il des offres de consultant en données ou en data governance ?",
+      "difficulty": "hard",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "consultant",
+        "governance",
+        "data management"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Senior Data Engineer (m/w/d 80-100%)",
+      "top1_score": 0.6485
+    },
+    {
+      "id": "q24",
+      "question": "Quelles offres mentionnent Kafka ou streaming de données ?",
+      "difficulty": "hard",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "Kafka",
+        "streaming",
+        "temps réel"
+      ],
+      "expected_category": "DATA_ENGINEERING",
+      "n_results": 5,
+      "top1_title": "Data Engineer (m/w/d)",
+      "top1_score": 0.339
+    },
+    {
+      "id": "q25",
+      "question": "Quelles offres viennent de cabinets de recrutement plutôt que d'entreprises directes ?",
+      "difficulty": "hard",
+      "hit": false,
+      "mrr": 0.0,
+      "category_hit": true,
+      "expected_keywords": [
+        "recrutement",
+        "RH",
+        "interim"
+      ],
+      "expected_category": null,
+      "n_results": 5,
+      "top1_title": "Career Opportunities: Senior Data Engineer (123259)",
+      "top1_score": 0.4255
+    }
+  ]
+}

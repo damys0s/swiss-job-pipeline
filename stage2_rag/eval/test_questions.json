@@ -1,0 +1,206 @@
+{
+  "description": "25 questions de test pour l'évaluation du système RAG — offres IT Suisse romande",
+  "categories": ["easy", "medium", "hard"],
+  "questions": [
+    {
+      "id": "q01",
+      "question": "Quelles offres de data engineer sont disponibles ?",
+      "expected_keywords": ["data engineer", "pipeline", "ETL"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 3,
+      "difficulty": "easy"
+    },
+    {
+      "id": "q02",
+      "question": "Y a-t-il des postes BI analytics en Suisse romande ?",
+      "expected_keywords": ["BI", "analytics", "reporting"],
+      "expected_category": "BI_ANALYTICS",
+      "expected_min_results": 2,
+      "difficulty": "easy"
+    },
+    {
+      "id": "q03",
+      "question": "Quelles offres mentionnent Python comme compétence ?",
+      "expected_keywords": ["Python"],
+      "expected_category": null,
+      "expected_min_results": 2,
+      "difficulty": "easy"
+    },
+    {
+      "id": "q04",
+      "question": "Quelles offres mentionnent SQL ?",
+      "expected_keywords": ["SQL"],
+      "expected_category": null,
+      "expected_min_results": 3,
+      "difficulty": "easy"
+    },
+    {
+      "id": "q05",
+      "question": "Y a-t-il des offres à Genève ?",
+      "expected_keywords": ["Genève", "Geneva"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "easy"
+    },
+    {
+      "id": "q06",
+      "question": "Quelles offres de data engineer demandent dbt ?",
+      "expected_keywords": ["dbt", "data engineer"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q07",
+      "question": "Y a-t-il des postes de Data Engineer qui ne demandent pas de cloud ?",
+      "expected_keywords": ["data engineer"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q08",
+      "question": "Quelles offres BI mentionnent Power BI ?",
+      "expected_keywords": ["Power BI"],
+      "expected_category": "BI_ANALYTICS",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q09",
+      "question": "Quelles offres BI mentionnent Tableau ?",
+      "expected_keywords": ["Tableau"],
+      "expected_category": "BI_ANALYTICS",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q10",
+      "question": "Quelles sont les offres les plus récentes en data engineering ?",
+      "expected_keywords": ["data engineer"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 2,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q11",
+      "question": "Quelles entreprises recrutent des profils data à Lausanne ?",
+      "expected_keywords": ["Lausanne"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q12",
+      "question": "Y a-t-il des postes de DBA ou administrateur de base de données ?",
+      "expected_keywords": ["DBA", "database", "Oracle", "SQL Server"],
+      "expected_category": "DBA_INFRA",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q13",
+      "question": "Quelles offres mentionnent Spark ou Hadoop ?",
+      "expected_keywords": ["Spark", "Hadoop"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q14",
+      "question": "Quelles offres sont ouvertes à des profils juniors ou sans expérience ?",
+      "expected_keywords": ["junior", "débutant", "stage", "graduate"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q15",
+      "question": "Quelles offres mentionnent Airflow pour l'orchestration ?",
+      "expected_keywords": ["Airflow"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "medium"
+    },
+    {
+      "id": "q16",
+      "question": "Compare les offres BI qui demandent Power BI versus Tableau",
+      "expected_keywords": ["Power BI", "Tableau"],
+      "expected_category": "BI_ANALYTICS",
+      "expected_min_results": 2,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q17",
+      "question": "Quelles entreprises bancaires ou financières recrutent des data engineers à Genève ?",
+      "expected_keywords": ["banque", "finance", "Genève"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q18",
+      "question": "Compare les salaires ou taux d'occupation entre les offres BI à Lausanne et Genève",
+      "expected_keywords": ["BI", "Lausanne", "Genève", "salaire", "%"],
+      "expected_category": "BI_ANALYTICS",
+      "expected_min_results": 2,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q19",
+      "question": "Quelles offres demandent à la fois du Python et du SQL ?",
+      "expected_keywords": ["Python", "SQL"],
+      "expected_category": null,
+      "expected_min_results": 2,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q20",
+      "question": "Y a-t-il des offres de data engineer en télétravail ou remote ?",
+      "expected_keywords": ["télétravail", "remote", "home office"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q21",
+      "question": "Quelles offres mentionnent des certifications cloud (AWS, Azure, GCP) ?",
+      "expected_keywords": ["AWS", "Azure", "GCP", "cloud"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q22",
+      "question": "Quelle est la différence entre les offres DATA_ENGINEERING et BI_ANALYTICS dans ce corpus ?",
+      "expected_keywords": ["data engineer", "BI", "analytics"],
+      "expected_category": null,
+      "expected_min_results": 3,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q23",
+      "question": "Y a-t-il des offres de consultant en données ou en data governance ?",
+      "expected_keywords": ["consultant", "governance", "data management"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q24",
+      "question": "Quelles offres mentionnent Kafka ou streaming de données ?",
+      "expected_keywords": ["Kafka", "streaming", "temps réel"],
+      "expected_category": "DATA_ENGINEERING",
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    },
+    {
+      "id": "q25",
+      "question": "Quelles offres viennent de cabinets de recrutement plutôt que d'entreprises directes ?",
+      "expected_keywords": ["recrutement", "RH", "interim"],
+      "expected_category": null,
+      "expected_min_results": 1,
+      "difficulty": "hard"
+    }
+  ]
+}

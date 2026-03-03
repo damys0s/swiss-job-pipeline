@@ -1,0 +1,14 @@
+{
+  "job_id": "ftjob-OCyBe6VAjQTZQcAGZjjtFYmr",
+  "model_base": "gpt-4o-mini-2024-07-18",
+  "model_finetuned": "ft:gpt-4o-mini-2024-07-18:personal:job-classifier:DF1fQqSZ",
+  "status": "succeeded",
+  "created_at": "2026-03-02T18:20:09.593788",
+  "finished_at": "2026-03-02T19:02:33.271942",
+  "trained_tokens": 163578,
+  "hyperparameters": {
+    "n_epochs": 3,
+    "batch_size": "auto",
+    "lr_multiplier": "auto"
+  }
+}

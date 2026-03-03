@@ -1,0 +1,17 @@
+# RAG pipeline
+sentence-transformers>=3.0.0
+faiss-cpu>=1.7.0        # Vector store (ChromaDB écarté : incompatible Python 3.14)
+anthropic>=0.34.0
+openai>=1.30.0
+
+# Data
+pandas>=2.0.0
+python-dotenv>=1.0.0
+
+# Notebooks
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Évaluation
+# ragas écarté : dépendance scikit-network sans wheel Python 3.14
+# → évaluation manuelle structurée (cf. src/evaluate.py)
