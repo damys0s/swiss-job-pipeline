@@ -55,8 +55,7 @@ jobs:
             cp /tmp/seen_jobs_updated.db stage3_agent/data/seen_jobs.db
             git add stage3_agent/data/seen_jobs.db
             git diff --staged --quiet || git commit -m "chore: update seen_jobs.db [$(date +%Y-%m-%d)]"
-            git push && break
-            echo "Push rejeté, retry $i/5..."
+            git push && break || echo "Push rejeté, retry $i/5..."
             sleep 3
           done
         env:
