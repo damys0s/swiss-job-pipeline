@@ -43,8 +43,10 @@ jobs:
 
       # 5. Commit de seen_jobs.db mis à jour
       # La base SQLite est committée pour persister l'historique entre les runs.
-      # Note : logs/runs/*.json sont dans .gitignore → non committés.
+      # continue-on-error : le pipeline est un succès même si le commit échoue
+      # (ex: push concurrent pendant les tests manuels). Le cron à 6h ne conflicte jamais.
       - name: Commit seen_jobs.db
+        continue-on-error: true
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
