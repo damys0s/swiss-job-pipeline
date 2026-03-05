@@ -42,11 +42,57 @@ SYSTEM_PROMPT = (
     "Réponds uniquement avec le nom de la catégorie, rien d'autre."
 )
 
-VALID_LABELS = {"DATA_ENGINEERING", "BI_ANALYTICS", "NOT_RELEVANT"}
+VALID_LABELS = {"DATA_ENGINEERING", "BI_ANALYTICS", "APPLIED_AI", "NOT_RELEVANT"}
 
 # Sous-ensemble des labels considérés comme "pertinents" pour les projets aval.
 # Utilisé par is_relevant() pour un filtrage binaire rapide.
-RELEVANT_LABELS = {"DATA_ENGINEERING", "BI_ANALYTICS"}
+RELEVANT_LABELS = {"DATA_ENGINEERING", "BI_ANALYTICS", "APPLIED_AI"}
+
+# --- Keyword pre-filter APPLIED_AI ----------------------------------------
+# Patterns de titre qui signalent un poste orienté intégration AI / déploiement
+# (Applied AI Engineer, AI Developer, MLOps) — distincts des postes recherche
+# (ML Engineer, Data Scientist) qui restent dans NOT_RELEVANT.
+
+_APPLIED_AI_INCLUDE = [
+    "applied ai",
+    "ai developer",
+    "ai engineer",        # ex: "Junior AI Engineer", "AI Engineer Generalist"
+    "ai software",        # ex: "AI Software Engineer"
+    "mlops",              # ex: "MLOps Junior", "MLOps Engineer"
+    "llmops",
+    "ai ops",
+    "ai integration",
+    "ai platform",
+    "genai",
+    "gen ai",
+    "llm engineer",
+    "prompt engineer",
+]
+
+# Titres contenant ces mots sont EXCLUS même s'ils matchent un pattern ci-dessus.
+# ML Engineer et Data Scientist valorisent la recherche/modélisation, pas l'intégration.
+_APPLIED_AI_EXCLUDE = [
+    "machine learning engineer",
+    "ml engineer",
+    "data scientist",
+    "research engineer",
+    "research scientist",
+]
+
+
+def _classify_applied_ai(title: str) -> bool:
+    """Retourne True si le titre correspond à un poste Applied AI / MLOps.
+
+    Logique :
+      1. Aucun pattern d'exclusion ne doit matcher.
+      2. Au moins un pattern d'inclusion doit matcher.
+    Cette approche évite de reclasser "ML Engineer" ou "Data Scientist" même
+    s'ils mentionnent "AI" dans un contexte secondaire.
+    """
+    t = title.lower()
+    if any(excl in t for excl in _APPLIED_AI_EXCLUDE):
+        return False
+    return any(incl in t for incl in _APPLIED_AI_INCLUDE)
 
 
 class JobClassifier:
@@ -99,6 +145,10 @@ class JobClassifier:
         comme valeur sûre par défaut — mieux vaut manquer une offre pertinente
         que d'inclure une offre non pertinente dans le RAG.
         """
+        # Pre-filter sur le titre : APPLIED_AI ne nécessite pas d'appel API.
+        if _classify_applied_ai(title):
+            return "APPLIED_AI"
+
         user_content = self._format_input(title, company, location, description)
 
         response = self.client.chat.completions.create(
@@ -212,3 +262,4 @@ if __name__ == "__main__":
     print(f"Titre:    {title}")
     print(f"Label:    {label}")
     print(f"Pertinent: {'oui' if label in RELEVANT_LABELS else 'non'}")
+    print(f"  (labels pertinents : {', '.join(sorted(RELEVANT_LABELS))})")
