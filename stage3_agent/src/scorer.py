@@ -49,6 +49,40 @@ def _is_location_ok(job_location: str, preferred: list[str]) -> bool:
     return any(city.lower() in loc for city in preferred)
 
 
+def _is_title_excluded(job_title: str, excluded_keywords: list[str]) -> bool:
+    """Retourne True si le titre contient un mot-clé exclu (ex: Senior, Lead...).
+
+    Exception : "Junior Senior" est toléré (rare mais existe).
+    """
+    if not job_title or not excluded_keywords:
+        return False
+    title_lower = job_title.lower()
+    for kw in excluded_keywords:
+        kw_lower = kw.lower()
+        if kw_lower in title_lower:
+            # Exception : "Senior" toléré si "junior" aussi présent
+            if kw_lower == "senior" and "junior" in title_lower:
+                continue
+            return True
+    return False
+
+
+def _has_negative_keywords(job_text: str, negative_keywords: list[str]) -> bool:
+    """Retourne True si l'offre contient au moins un mot-clé rédhibitoire."""
+    if not job_text or not negative_keywords:
+        return False
+    text_lower = job_text.lower()
+    return any(kw.lower() in text_lower for kw in negative_keywords)
+
+
+def _count_positive_keywords(job_text: str, positive_keywords: list[str]) -> int:
+    """Compte combien de mots-clés positifs sont présents dans le texte."""
+    if not job_text or not positive_keywords:
+        return 0
+    text_lower = job_text.lower()
+    return sum(1 for kw in positive_keywords if kw.lower() in text_lower)
+
+
 def _build_profile_text(profile: dict) -> str:
     """Construit le texte du profil pour l'embedding (identique à la spec)."""
     title    = profile.get("title", "")
@@ -107,6 +141,28 @@ class JobScorer:
         # Filtre NOT_RELEVANT
         relevant = [j for j in classified if j.get("label") in RELEVANT_LABELS]
         logger.info(f"  {len(classified)} → {len(relevant)} après filtrage NOT_RELEVANT")
+
+        # Filtre titres exclus (Senior, Lead, Manager...)
+        excluded_title_kws = self._profile.get("excluded_title_keywords", [])
+        relevant = [j for j in relevant if not _is_title_excluded(j.get("title", ""), excluded_title_kws)]
+        logger.info(f"  → {len(relevant)} après filtrage titres exclus")
+
+        # Filtre mots-clés négatifs (red flags dans titre + description)
+        negative_kws = self._profile.get("negative_keywords", [])
+        relevant = [
+            j for j in relevant
+            if not _has_negative_keywords(f"{j.get('title', '')} {j.get('description', '')}", negative_kws)
+        ]
+        logger.info(f"  → {len(relevant)} après filtrage mots-clés négatifs")
+
+        # Filtre mots-clés positifs (min 2 requis)
+        positive_kws = self._profile.get("positive_keywords", [])
+        min_pos = self._profile.get("min_positive_keywords", 2)
+        relevant = [
+            j for j in relevant
+            if _count_positive_keywords(f"{j.get('title', '')} {j.get('description', '')}", positive_kws) >= min_pos
+        ]
+        logger.info(f"  → {len(relevant)} après filtrage mots-clés positifs (min {min_pos})")
 
         # Filtre géographique
         preferred_locs = self._profile.get("locations_preferred", [])

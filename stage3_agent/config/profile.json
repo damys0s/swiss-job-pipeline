@@ -1,13 +1,37 @@
 {
-  "title": "Data Engineer / BI Developer",
-  "skills": [
-    "SQL", "PL/SQL", "Oracle", "PostgreSQL", "SQL Server",
-    "Python", "Power BI", "Tableau",
-    "ETL", "Talend", "dbt",
-    "Azure", "data warehouse", "data modeling"
+  "title": "Data Analyst / BI Developer / Analytics Engineer",
+  "target_titles": [
+    "Data Analyst", "BI Developer", "BI Analyst", "ETL Developer",
+    "Data Engineer Junior", "Analytics Engineer", "Business Intelligence Engineer",
+    "Consultant BI", "Consultant Data"
   ],
-  "experience_years": 5,
+  "excluded_title_keywords": [
+    "Senior", "Lead", "Architect", "Principal", "Staff", "Manager",
+    "Data Scientist", "ML Engineer", "DevOps", "Cloud Engineer",
+    "DBA Infrastructure", "Cybersecurity"
+  ],
+  "skills": [
+    "SQL", "Power BI", "ETL", "Talend", "Alteryx", "Python",
+    "data warehouse", "dashboards", "reporting", "modélisation",
+    "Kimball", "DAX", "SSIS", "Snowflake", "dbt"
+  ],
+  "positive_keywords": [
+    "SQL", "Power BI", "ETL", "Talend", "Alteryx", "Python",
+    "data warehouse", "dashboards", "reporting", "modélisation",
+    "Kimball", "DAX", "SSIS", "Snowflake", "dbt"
+  ],
+  "negative_keywords": [
+    "Kubernetes", "Terraform", "Kafka", "Spark", "Scala",
+    "machine learning", "deep learning", "NLP", "React", "Angular",
+    "Salesforce", "SAP ABAP", "COBOL"
+  ],
+  "min_positive_keywords": 2,
+  "max_experience_years": 5,
+  "experience_years": 3,
   "languages": ["French", "English", "Spanish"],
-  "locations_preferred": ["Lausanne", "Geneva", "Nyon", "Morges"],
+  "locations_preferred": [
+    "Lausanne", "Geneva", "Genève", "Vaud", "Nyon", "Morges",
+    "Bussigny", "Yverdon", "Suisse romande"
+  ],
   "work_authorization": "EU citizen, Swiss work permit"
 }
