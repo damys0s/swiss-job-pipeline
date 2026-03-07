@@ -156,7 +156,8 @@ def run_daily_pipeline(dry_run: bool = False) -> dict:
 
         if not dry_run:
             dedup.mark_seen(new_jobs, sent_date=run_date)
-            logger.info(f"  ✓ {len(new_jobs)} offres ajoutées à l'historique")
+            dedup.mark_sent_details(top_jobs)  # Stocke score/label pour les offres envoyées
+            logger.info(f"  ✓ {len(new_jobs)} offres ajoutées à l'historique ({len(top_jobs)} avec score/label)")
         else:
             logger.info("  [DRY RUN] Historique non mis à jour")
 

@@ -21,6 +21,7 @@ env/
 # Données personnelles / artefacts temporaires
 stage3_agent/logs/runs/
 stage3_agent/data/email_preview.html
+Tableau-de-suivi-des-candidatures.xlsx
 
 # IDEs
 .vscode/

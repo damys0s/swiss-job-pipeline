@@ -15,5 +15,9 @@ feedparser>=6.0.10              # Indeed RSS
 # --- Config & utils ---
 python-dotenv>=1.0.0
 
+# --- Dashboard ---
+streamlit>=1.35.0
+openpyxl>=3.1.0
+
 # --- Tests ---
 pytest>=8.0.0

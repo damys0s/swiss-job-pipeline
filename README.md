@@ -216,6 +216,28 @@ from shared.retriever import JobRetriever     # FAISS similarity search
 
 ---
 
+## Dashboard de suivi
+
+Un dashboard Streamlit local permet de suivre les candidatures sans quitter le navigateur.
+
+```bash
+cd stage3_agent
+python -m streamlit run dashboard.py
+```
+
+**Onglet "Offres pipeline"** — offres reçues par email, marquage candidaté en un clic (checkbox).
+
+**Onglet "Mes candidatures"** — suivi manuel complet :
+- Ajout d'une candidature (formulaire intégré)
+- Édition de l'état directement dans la table (menu déroulant)
+- Suppression avec confirmation (mode suppression activable)
+- Filtres par état et recherche texte libre
+- Stats par état en temps réel
+
+Toutes les données sont stockées dans `stage3_agent/data/seen_jobs.db` (SQLite).
+
+---
+
 ## Stack technique
 
 | Composant | Technologie |
@@ -225,8 +247,9 @@ from shared.retriever import JobRetriever     # FAISS similarity search
 | Vector store | FAISS IndexFlatIP (exact search) |
 | LLM RAG | Claude claude-sonnet-4-6 (Anthropic) |
 | Collecte | Adzuna API + SerpApi Google Jobs |
-| Déduplication | SQLite |
+| Déduplication / Suivi | SQLite |
 | Email | SMTP Gmail + HTML templating |
+| Dashboard | Streamlit |
 | CI/CD | GitHub Actions (cron quotidien) |
 | Conteneurisation | Docker (python:3.11-slim, user non-root, modèle bake) |
 | Python | 3.11 (Docker/CI) / 3.14 (local) |
