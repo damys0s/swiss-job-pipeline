@@ -52,7 +52,8 @@ SEND_EMPTY_EMAIL = False   # True = envoie un email "rien de nouveau", False = n
 # La base de déduplication et les logs restent dans stage3_agent/.
 DATA_DIR        = REPO_ROOT / "data"
 VECTORSTORE_DIR = DATA_DIR / "vectorstore"
-DB_PATH         = BASE_DIR / "data" / "seen_jobs.db"
+DB_PATH         = BASE_DIR / "data" / "seen_jobs.db"   # pipeline dedup (tracké git, CI)
+TRACKER_DB_PATH = BASE_DIR / "data" / "tracker.db"    # candidatures perso (gitignored)
 LOGS_DIR        = BASE_DIR / "logs" / "runs"
 
 # --- Chemins des configs -----------------------------------------------------

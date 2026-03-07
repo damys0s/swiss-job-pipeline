@@ -21,7 +21,7 @@ env/
 # Données personnelles / artefacts temporaires
 stage3_agent/logs/runs/
 stage3_agent/data/email_preview.html
-stage3_agent/data/seen_jobs.db
+stage3_agent/data/tracker.db
 Tableau-de-suivi-des-candidatures.xlsx
 
 # IDEs
@@ -45,5 +45,6 @@ CLAUDE.md
 # - data/training/*.jsonl              → données d'entraînement
 # - data/vectorstore/jobs.index        → index FAISS
 # - data/vectorstore/jobs_meta.json    → métadonnées offres
-# - stage3_agent/data/seen_jobs.db     → ignoré (données personnelles + déduplication CI)
+# - stage3_agent/data/seen_jobs.db     → tracké git, mis à jour par CI (dedup pipeline uniquement)
+# - stage3_agent/data/tracker.db       → ignoré (candidatures personnelles)
 # - stage1_classifier/results/         → résultats du fine-tuning

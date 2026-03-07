@@ -22,7 +22,7 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 
-from config.settings import DB_PATH
+from config.settings import TRACKER_DB_PATH
 
 
 class ApplicationTracker:
@@ -46,7 +46,7 @@ class ApplicationTracker:
         "J'ai reçu une réponse négative": "#EF4444",
     }
 
-    def __init__(self, db_path: Path = DB_PATH):
+    def __init__(self, db_path: Path = TRACKER_DB_PATH):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_table()
