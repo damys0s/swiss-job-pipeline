@@ -24,7 +24,7 @@ sys.path.insert(0, str(_REPO))
 
 from config.settings import DB_PATH
 from src.deduplicator import Deduplicator
-from src.tracker import ApplicationTracker
+from src.tracker import ApplicationTracker, backup_tracker_db
 
 # ── Config ────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Job Dashboard", page_icon="🎯", layout="wide")
@@ -126,6 +126,13 @@ def load_applications() -> pd.DataFrame:
     return df
 
 
+# ── Backup quotidien de tracker.db ───────────────────────────────────────────
+if "backup_done" not in st.session_state:
+    backed_up = backup_tracker_db()
+    st.session_state["backup_done"] = True
+    if backed_up:
+        st.toast(f"💾 Backup tracker.db : {backed_up.name}")
+
 # ── Clôture automatique des candidatures sans retour après 6 semaines ────────
 _closed = tracker.auto_close_stale(days=42)
 if _closed:
@@ -150,7 +157,7 @@ c4.metric("Candidatures manuelles", stats_apps["total"])
 c5.metric("Entretiens", stats_apps["by_etat"].get("J'ai un entretien", 0))
 
 st.markdown("<br>", unsafe_allow_html=True)
-tab1, tab2 = st.tabs(["📬  Offres pipeline", "📋  Mes candidatures"])
+tab1, tab2, tab3 = st.tabs(["📬  Offres pipeline", "📋  Mes candidatures", "📊  Statistiques"])
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -327,13 +334,6 @@ with tab2:
             plus = f" + {len(relance_global) - 5} autres" if len(relance_global) > 5 else ""
             st.info(f"⏰ **{len(relance_global)} relance(s) à faire (J+10 dépassé)** : {noms}{plus}")
 
-        # Graphique hebdomadaire
-        with st.expander("📊 Activité par semaine"):
-            df_chart = df_apps.dropna(subset=["date_envoi"]).copy()
-            df_chart["semaine"] = pd.to_datetime(df_chart["date_envoi"]).dt.to_period("W").dt.start_time
-            chart_data = df_chart.groupby("semaine").size().rename("Candidatures envoyées")
-            st.bar_chart(chart_data)
-
         # Export CSV + normalisation
         csv_bytes = display[["date_envoi", "entreprise", "poste", "etat", "lieu", "url", "contact", "commentaire"]].to_csv(index=False).encode("utf-8")
         tool_c1, tool_c2 = st.columns([2, 5])
@@ -416,3 +416,69 @@ with tab2:
                         st.success(f"✓ {len(to_del)} supprimée(s).")
                         st.cache_data.clear()
                         st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 3 — Statistiques
+# ══════════════════════════════════════════════════════════════════════════════
+with tab3:
+    df_stat = load_applications()
+
+    if df_stat.empty:
+        st.info("Aucune candidature.")
+    else:
+        total      = len(df_stat)
+        postule    = len(df_stat[df_stat["etat"].isin(["J'ai postulé", "J'ai relancé",
+                                                        "J'ai un entretien",
+                                                        "Je n'ai pas reçu de réponse",
+                                                        "J'ai reçu une réponse négative"])])
+        entretiens = stats_apps["by_etat"].get("J'ai un entretien", 0)
+        negatives  = stats_apps["by_etat"].get("J'ai reçu une réponse négative", 0)
+        taux_rep   = round(negatives / postule * 100) if postule else 0
+        taux_conv  = round(entretiens / postule * 100) if postule else 0
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total candidatures",  total)
+        m2.metric("Entretiens obtenus",  entretiens)
+        m3.metric("Taux de réponse",     f"{taux_rep} %",  help="Réponses négatives / envoyées")
+        m4.metric("Taux de conversion",  f"{taux_conv} %", help="Entretiens / envoyées")
+
+        st.markdown("---")
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.subheader("Répartition par état")
+            etat_counts = df_stat["etat"].value_counts().rename("Candidatures")
+            st.bar_chart(etat_counts)
+
+        with col_b:
+            st.subheader("Activité par semaine")
+            df_wk = df_stat.dropna(subset=["date_envoi"]).copy()
+            df_wk["semaine"] = pd.to_datetime(df_wk["date_envoi"]).dt.to_period("W").dt.start_time
+            st.bar_chart(df_wk.groupby("semaine").size().rename("Candidatures envoyées"))
+
+        st.markdown("---")
+        st.subheader("Top entreprises (volume)")
+        top_ent = (
+            df_stat.groupby("entreprise")
+            .size()
+            .sort_values(ascending=False)
+            .head(15)
+            .rename("Candidatures")
+        )
+        st.bar_chart(top_ent)
+
+        st.markdown("---")
+        st.subheader("Backups tracker.db")
+        from config.settings import TRACKER_DB_PATH
+        backup_dir = TRACKER_DB_PATH.parent / "backups"
+        if backup_dir.exists():
+            backups = sorted(backup_dir.glob("tracker_*.db"), reverse=True)
+            if backups:
+                rows_b = [{"Fichier": f.name, "Taille": f"{f.stat().st_size // 1024} Ko"} for f in backups]
+                st.dataframe(pd.DataFrame(rows_b), hide_index=True, use_container_width=True)
+            else:
+                st.caption("Aucun backup.")
+        else:
+            st.caption("Dossier backups/ introuvable.")

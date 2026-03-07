@@ -18,11 +18,29 @@ Table : applications
   - created_at TEXT   (ISO date de création de l'entrée)
 """
 
+import shutil
 import sqlite3
 from datetime import date
 from pathlib import Path
 
 from config.settings import TRACKER_DB_PATH
+
+
+def backup_tracker_db(db_path: Path = TRACKER_DB_PATH) -> Path | None:
+    """Copie tracker.db dans un sous-dossier backups/ horodaté (une fois par jour)."""
+    if not db_path.exists():
+        return None
+    backup_dir = db_path.parent / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    dest = backup_dir / f"tracker_{date.today().isoformat()}.db"
+    if dest.exists():
+        return None  # déjà sauvegardé aujourd'hui
+    shutil.copy2(db_path, dest)
+    # Garde les 30 derniers backups
+    old = sorted(backup_dir.glob("tracker_*.db"))[:-30]
+    for f in old:
+        f.unlink()
+    return dest
 
 
 class ApplicationTracker:
