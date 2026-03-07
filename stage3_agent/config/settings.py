@@ -56,6 +56,11 @@ DB_PATH         = BASE_DIR / "data" / "seen_jobs.db"   # pipeline dedup (tracké
 TRACKER_DB_PATH = BASE_DIR / "data" / "tracker.db"    # candidatures perso (gitignored)
 LOGS_DIR        = BASE_DIR / "logs" / "runs"
 
+# --- Backup cloud (OneDrive, Dropbox, etc.) ----------------------------------
+# Chemin absolu vers un dossier synchronisé dans le cloud (configurable dans .env)
+# Exemple : BACKUP_CLOUD_PATH=C:/Users/Dam/OneDrive/Documents/job_backups
+BACKUP_CLOUD_PATH = os.getenv("BACKUP_CLOUD_PATH", "")
+
 # --- Chemins des configs -----------------------------------------------------
 CONFIG_DIR           = BASE_DIR / "config"
 PROFILE_PATH         = CONFIG_DIR / "profile.json"
@@ -77,6 +82,7 @@ MAX_DAYS_OLD    = 1      # Fenêtre de collecte en jours
 USE_ADZUNA     = True
 USE_SERPAPI    = True
 USE_INDEED_RSS = False   # Indeed bloque les flux RSS depuis 2024 — désactivé
+USE_JOBUP      = True    # Scraping JobUp.ch (pas de clé API requise)
 
 # Timeout API (secondes)
 API_TIMEOUT = 30

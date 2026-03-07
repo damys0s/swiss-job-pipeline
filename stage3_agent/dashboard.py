@@ -3,7 +3,8 @@ dashboard.py — Tableau de bord de recherche d'emploi
 =====================================================
 Deux onglets :
   1. Offres pipeline   — offres reçues par email, marquage candidature en un clic
-  2. Mes candidatures  — suivi manuel (ajout, édition état, suppression)
+  2. Mes candidatures  — suivi manuel (ajout, édition complète inline, suppression)
+  3. Statistiques      — graphiques et KPIs
 
 Usage :
     cd stage3_agent
@@ -22,7 +23,7 @@ _REPO = _ROOT.parent
 sys.path.insert(0, str(_ROOT))
 sys.path.insert(0, str(_REPO))
 
-from config.settings import DB_PATH
+from config.settings import BACKUP_CLOUD_PATH, DB_PATH
 from src.deduplicator import Deduplicator
 from src.tracker import ApplicationTracker, backup_tracker_db
 
@@ -31,8 +32,20 @@ st.set_page_config(page_title="Job Dashboard", page_icon="🎯", layout="wide")
 
 st.markdown("""
 <style>
-  .stApp { background-color: #F8F9FB; }
+  /* ── Base ── */
+  .stApp {
+    background-color: #F8F9FB;
+    color: #111827;               /* couleur de texte par défaut sur tout le dashboard */
+  }
 
+  /* ── Texte général (markdown, write, caption, info…) ── */
+  .stApp p, .stApp span, .stApp li, .stApp small { color: #111827; }
+  [data-testid="stCaptionContainer"] p,
+  [data-testid="stCaptionContainer"] { color: #4B5563 !important; }
+  [data-testid="stMarkdownContainer"] p { color: #111827; }
+  .stAlert p { color: #111827; }
+
+  /* ── Hero banner (texte blanc sur fond violet — override intentionnel) ── */
   .hero {
     background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 60%, #A78BFA 100%);
     border-radius: 14px;
@@ -40,9 +53,10 @@ st.markdown("""
     margin-bottom: 1.5rem;
     color: white;
   }
-  .hero h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 0.2rem; }
-  .hero p  { font-size: 0.9rem; opacity: 0.85; margin: 0; }
+  .hero h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 0.2rem; color: white; }
+  .hero p  { font-size: 0.9rem; opacity: 0.85; margin: 0; color: white; }
 
+  /* ── Métriques ── */
   [data-testid="metric-container"] {
     background: white;
     border: 1px solid #E9ECF3;
@@ -51,12 +65,13 @@ st.markdown("""
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
   [data-testid="metric-container"] label {
-    color: #6B7280; font-size: 0.78rem; font-weight: 500;
+    color: #6B7280 !important; font-size: 0.78rem; font-weight: 500;
   }
   [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    color: #111827; font-size: 1.7rem; font-weight: 700;
+    color: #111827 !important; font-size: 1.7rem; font-weight: 700;
   }
 
+  /* ── Onglets ── */
   .stTabs [data-baseweb="tab-list"] {
     gap: 6px; background: transparent; border-bottom: 2px solid #E9ECF3;
   }
@@ -73,12 +88,63 @@ st.markdown("""
     background: white !important;
   }
 
+  /* ── Boutons primary ── */
   div[data-testid="stButton"] button[kind="primary"] {
-    background: #5B21B6; border: none; border-radius: 8px; font-weight: 600;
+    background: #5B21B6; border: none; border-radius: 8px;
+    font-weight: 600; color: white;
   }
   div[data-testid="stButton"] button[kind="primary"]:hover { background: #4C1D95; }
 
+  /* ── Boutons secondary / download ── */
+  div[data-testid="stButton"] button,
+  div[data-testid="stDownloadButton"] button {
+    color: #111827 !important;
+  }
+
   hr { border-color: #E9ECF3; }
+
+  /* ── Inputs et textareas ── */
+  input, textarea {
+    color: #111827 !important;
+    background-color: white !important;
+  }
+  [data-baseweb="input"], [data-baseweb="textarea"] {
+    background-color: white !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #9CA3AF !important;
+  }
+
+  /* ── Selectbox / multiselect ── */
+  [data-baseweb="select"] > div {
+    background-color: white !important;
+    color: #111827 !important;
+  }
+  [data-baseweb="menu"] { color: #111827 !important; }
+
+  /* ── Labels de tous les widgets de formulaire ── */
+  .stTextInput  > label,
+  .stTextArea   > label,
+  .stSelectbox  > label,
+  .stDateInput  > label,
+  .stMultiSelect > label,
+  .stNumberInput > label,
+  .stRadio      > label,
+  .stCheckbox   > label {
+    color: #374151 !important;
+    font-weight: 500;
+  }
+
+  /* ── Checkbox / radio texte d'option ── */
+  .stRadio   span[data-baseweb="radio"]   + div { color: #111827 !important; }
+  .stCheckbox span { color: #111827 !important; }
+
+  /* ── Sous-titres (subheader) ── */
+  h2, h3 { color: #111827 !important; }
+
+  /* ── Data editor ── */
+  [data-testid="stDataFrame"] td,
+  [data-testid="stDataFrame"] th { color: #111827 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -123,6 +189,20 @@ def load_applications() -> pd.DataFrame:
         & (df["_jours"] >= 10)
         & df["contact"].fillna("").str.strip().ne("")
     )
+    if "categorie" not in df.columns:
+        df["categorie"] = ""
+    df["categorie"] = df["categorie"].fillna("")
+    return df
+
+
+@st.cache_data(ttl=15)
+def load_history(limit: int = 50) -> pd.DataFrame:
+    rows = tracker.get_history(limit=limit)
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df = df[["changed_at", "entreprise", "poste", "ancien_etat", "nouvel_etat"]]
+    df.columns = ["Date/heure", "Entreprise", "Poste", "Ancien état", "Nouvel état"]
     return df
 
 
@@ -131,7 +211,10 @@ if "backup_done" not in st.session_state:
     backed_up = backup_tracker_db()
     st.session_state["backup_done"] = True
     if backed_up:
-        st.toast(f"💾 Backup tracker.db : {backed_up.name}")
+        msg = f"💾 Backup tracker.db : {backed_up.name}"
+        if BACKUP_CLOUD_PATH:
+            msg += " (+ cloud)"
+        st.toast(msg)
 
 # ── Clôture automatique des candidatures sans retour après 6 semaines ────────
 _closed = tracker.auto_close_stale(days=42)
@@ -250,9 +333,10 @@ with tab2:
     # Formulaire d'ajout
     with st.expander("➕  Nouvelle candidature", expanded=False):
         with st.form("add_application", clear_on_submit=True):
-            r1c1, r1c2 = st.columns(2)
+            r1c1, r1c2, r1c3 = st.columns(3)
             entreprise  = r1c1.text_input("Entreprise *")
             poste       = r1c2.text_input("Poste *")
+            categorie_new = r1c3.selectbox("Catégorie", [""] + ApplicationTracker.CATEGORIES)
 
             r2c1, r2c2, r2c3 = st.columns(3)
             lieu        = r2c1.text_input("Lieu")
@@ -274,7 +358,7 @@ with tab2:
                         url_new.strip(), lieu.strip(),
                         etat_new, str(date_envoi),
                         contact.strip(), commentaire.strip(),
-                        description.strip(),
+                        description.strip(), categorie_new,
                     )
                     st.success(f"✓ Candidature ajoutée : {entreprise} — {poste}")
                     st.cache_data.clear()
@@ -288,7 +372,8 @@ with tab2:
     if df_apps.empty:
         st.info("Aucune candidature. Utilisez le formulaire ci-dessus pour en ajouter.")
     else:
-        fa1, fa2 = st.columns([3, 1])
+        # --- Ligne 1 de filtres : état, suppression, catégorie ---
+        fa1, fa2, fa3 = st.columns([3, 1, 2])
         etats_defaut = [e for e in ApplicationTracker.ETATS if e != "J'ai reçu une réponse négative"]
         filtre_etats = fa1.multiselect(
             "États affichés",
@@ -296,8 +381,14 @@ with tab2:
             default=etats_defaut,
         )
         show_delete = fa2.checkbox("Mode suppression", value=False)
+        filtre_categories = fa3.multiselect(
+            "Catégorie",
+            options=ApplicationTracker.CATEGORIES,
+            default=[],
+            placeholder="Toutes",
+        )
 
-        # Déduplique les noms d'entreprise de façon insensible à la casse (première occurrence gagne)
+        # --- Ligne 2 de filtres : entreprise et recherche texte ---
         _seen: dict[str, str] = {}
         for name in df_apps["entreprise"].dropna().str.strip():
             if name.lower() not in _seen:
@@ -308,11 +399,19 @@ with tab2:
         filtre_entreprise = fb1.selectbox("Entreprise", ["Toutes"] + entreprises_dispo)
         search_app        = fb2.text_input("Rechercher", placeholder="poste, lieu, commentaire…", key="s_app")
 
+        # --- Ligne 3 de filtres : plage de dates ---
+        fc1, fc2 = st.columns(2)
+        date_debut = fc1.date_input("Du", value=None, key="date_debut")
+        date_fin   = fc2.date_input("Au", value=None, key="date_fin")
+
+        # --- Application des filtres ---
         display = df_apps.copy()
         if filtre_etats:
             display = display[display["etat"].isin(filtre_etats)]
         else:
-            display = display.iloc[0:0]  # rien sélectionné = rien affiché
+            display = display.iloc[0:0]
+        if filtre_categories:
+            display = display[display["categorie"].isin(filtre_categories)]
         if filtre_entreprise != "Toutes":
             display = display[display["entreprise"].str.lower() == filtre_entreprise.lower()]
         if search_app:
@@ -323,6 +422,10 @@ with tab2:
                 | display["description"].fillna("").str.contains(search_app, case=False)
             )
             display = display[mask]
+        if date_debut:
+            display = display[display["date_envoi"].notna() & (display["date_envoi"] >= date_debut)]
+        if date_fin:
+            display = display[display["date_envoi"].notna() & (display["date_envoi"] <= date_fin)]
 
         # Alerte relances J+10 (calculée sur toutes les candidatures, pas seulement la vue filtrée)
         relance_global = df_apps[df_apps["_relance"]] if "_relance" in df_apps.columns else pd.DataFrame()
@@ -335,7 +438,8 @@ with tab2:
             st.info(f"⏰ **{len(relance_global)} relance(s) à faire (J+10 dépassé)** : {noms}{plus}")
 
         # Export CSV + normalisation
-        csv_bytes = display[["date_envoi", "entreprise", "poste", "etat", "lieu", "url", "contact", "commentaire"]].to_csv(index=False).encode("utf-8")
+        export_cols = [c for c in ["date_envoi", "entreprise", "poste", "categorie", "etat", "lieu", "url", "contact", "commentaire"] if c in display.columns]
+        csv_bytes = display[export_cols].to_csv(index=False).encode("utf-8")
         tool_c1, tool_c2 = st.columns([2, 5])
         tool_c1.download_button("⬇️ Exporter CSV", data=csv_bytes, file_name="candidatures.csv", mime="text/csv")
         if tool_c2.button("🔤 Normaliser noms d'entreprise"):
@@ -344,20 +448,24 @@ with tab2:
             st.cache_data.clear()
             st.rerun()
 
-        st.caption(f"{len(display)} candidature(s) · États et commentaires éditables directement dans la table.")
+        st.caption(f"{len(display)} candidature(s) · Tous les champs sont éditables directement dans la table.")
 
         if display.empty:
             st.info("Aucune candidature pour ce filtre.")
         else:
             display = display.reset_index(drop=True)
-            original_etats       = display.set_index("id")["etat"].to_dict()
+            original_etats        = display.set_index("id")["etat"].to_dict()
             original_commentaires = display.set_index("id")["commentaire"].to_dict()
+            # Champs éditables librement (sans historique)
+            _field_cols = [c for c in ["entreprise", "poste", "lieu", "url", "categorie"] if c in display.columns]
+            original_fields = display.set_index("id")[_field_cols].to_dict("index")
+
             display["_supprimer"] = False
             display["_alerte"]    = display["_relance"].map({True: "⚠️ J+10", False: ""})
 
-            base_cols = ["_alerte", "date_envoi", "entreprise", "poste", "etat", "lieu", "url", "commentaire", "description"]
+            base_cols = ["_alerte", "date_envoi", "entreprise", "poste", "categorie", "etat", "lieu", "url", "commentaire", "description"]
+            base_cols = [c for c in base_cols if c in display.columns]
             cols_show = (["_supprimer"] if show_delete else []) + base_cols
-            cols_show = [c for c in cols_show if c in display.columns]
 
             col_cfg = {
                 "_supprimer": st.column_config.CheckboxColumn("🗑️",            width="small"),
@@ -365,43 +473,66 @@ with tab2:
                 "date_envoi": st.column_config.DateColumn("Date", format="DD/MM/YYYY", width="small"),
                 "entreprise": st.column_config.TextColumn("Entreprise",        width="small"),
                 "poste":      st.column_config.TextColumn("Poste",             width="medium"),
+                "categorie":  st.column_config.SelectboxColumn(
+                                  "Catégorie", options=[""] + ApplicationTracker.CATEGORIES, width="small"),
                 "etat":       st.column_config.SelectboxColumn(
                                   "État", options=ApplicationTracker.ETATS,    width="medium"),
                 "lieu":       st.column_config.TextColumn("Lieu",              width="small"),
-                "url":        st.column_config.LinkColumn("Lien",              width="small"),
+                "url":        st.column_config.TextColumn("URL",               width="small"),
                 "commentaire":st.column_config.TextColumn("Commentaire",       width="small"),
                 "description":st.column_config.TextColumn("Description offre", width="large"),
             }
 
+            # Seuls _alerte, date_envoi et description restent en lecture seule
+            disabled_cols = ["_alerte", "date_envoi", "description"]
+
             edited_apps = st.data_editor(
                 display[cols_show],
                 column_config=col_cfg,
-                disabled=["_alerte", "date_envoi", "entreprise", "poste", "lieu", "url", "description"],
+                disabled=disabled_cols,
                 hide_index=True,
                 width="stretch",
                 height=min(600, 60 + len(display) * 38),
                 key="apps_editor",
             )
 
-            # Détecter les changements d'état et de commentaire
+            # Détecter et sauvegarder les changements
             changed_etat = 0
             changed_commentaire = 0
+            changed_fields = 0
+
             for i, row in edited_apps.iterrows():
                 app_id = display.iloc[i]["id"]
+
+                # État (avec historique)
                 new_etat = row.get("etat")
                 if new_etat and new_etat != original_etats.get(app_id):
-                    tracker.update_etat(app_id, new_etat)
+                    tracker.update_etat(app_id, new_etat, old_etat=original_etats.get(app_id))
                     changed_etat += 1
+
+                # Commentaire
                 new_commentaire = row.get("commentaire", "")
-                if new_commentaire != original_commentaires.get(app_id, ""):
+                if (new_commentaire or "") != (original_commentaires.get(app_id) or ""):
                     tracker.update_commentaire(app_id, new_commentaire or "")
                     changed_commentaire += 1
 
-            if changed_etat or changed_commentaire:
+                # Champs libres (entreprise, poste, lieu, url, categorie)
+                field_changes = {}
+                for col in _field_cols:
+                    new_val = row.get(col) or ""
+                    old_val = original_fields.get(app_id, {}).get(col) or ""
+                    if new_val != old_val:
+                        field_changes[col] = new_val
+                if field_changes:
+                    tracker.update_fields(app_id, **field_changes)
+                    changed_fields += 1
+
+            if changed_etat or changed_commentaire or changed_fields:
                 parts = []
                 if changed_etat:        parts.append(f"{changed_etat} état(s)")
                 if changed_commentaire: parts.append(f"{changed_commentaire} commentaire(s)")
-                st.success(f"✓ {' et '.join(parts)} mis à jour.")
+                if changed_fields:      parts.append(f"{changed_fields} fiche(s) mise(s) à jour")
+                st.success(f"✓ {' · '.join(parts)}")
                 st.cache_data.clear()
                 st.rerun()
 
@@ -416,6 +547,15 @@ with tab2:
                         st.success(f"✓ {len(to_del)} supprimée(s).")
                         st.cache_data.clear()
                         st.rerun()
+
+        # Historique des changements d'état
+        st.markdown("---")
+        with st.expander("📜 Historique des changements d'état", expanded=False):
+            df_hist = load_history(limit=50)
+            if df_hist.empty:
+                st.caption("Aucun changement d'état enregistré pour l'instant.")
+            else:
+                st.dataframe(df_hist, hide_index=True, use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -459,15 +599,24 @@ with tab3:
             st.bar_chart(df_wk.groupby("semaine").size().rename("Candidatures envoyées"))
 
         st.markdown("---")
-        st.subheader("Top entreprises (volume)")
-        top_ent = (
-            df_stat.groupby("entreprise")
-            .size()
-            .sort_values(ascending=False)
-            .head(15)
-            .rename("Candidatures")
-        )
-        st.bar_chart(top_ent)
+
+        col_c, col_d = st.columns(2)
+
+        with col_c:
+            st.subheader("Top entreprises (volume)")
+            top_ent = (
+                df_stat.groupby("entreprise")
+                .size()
+                .sort_values(ascending=False)
+                .head(15)
+                .rename("Candidatures")
+            )
+            st.bar_chart(top_ent)
+
+        with col_d:
+            st.subheader("Répartition par catégorie")
+            cat_counts = df_stat["categorie"].replace("", "Non classé").value_counts().rename("Candidatures")
+            st.bar_chart(cat_counts)
 
         st.markdown("---")
         st.subheader("Backups tracker.db")
@@ -479,6 +628,16 @@ with tab3:
                 rows_b = [{"Fichier": f.name, "Taille": f"{f.stat().st_size // 1024} Ko"} for f in backups]
                 st.dataframe(pd.DataFrame(rows_b), hide_index=True, use_container_width=True)
             else:
-                st.caption("Aucun backup.")
+                st.caption("Aucun backup local.")
         else:
             st.caption("Dossier backups/ introuvable.")
+
+        if BACKUP_CLOUD_PATH:
+            cloud_dir = Path(BACKUP_CLOUD_PATH)
+            if cloud_dir.exists():
+                cloud_backups = sorted(cloud_dir.glob("tracker_*.db"), reverse=True)
+                st.caption(f"☁️ Backup cloud ({BACKUP_CLOUD_PATH}) : {len(cloud_backups)} fichier(s)")
+            else:
+                st.caption(f"☁️ Backup cloud configuré ({BACKUP_CLOUD_PATH}) — dossier non encore créé")
+        else:
+            st.caption("☁️ Backup cloud non configuré — ajouter BACKUP_CLOUD_PATH dans .env pour activer")

@@ -5,6 +5,7 @@ Sources :
   1. Adzuna API (CH — offres dernières 24h)
   2. SerpApi Google Jobs (filtrage par date)
   3. Indeed RSS (entrées récentes)
+  4. JobUp.ch (scraping HTML — pas de clé API requise)
 
 Toutes les offres sont normalisées au format standard :
 {
@@ -15,7 +16,7 @@ Toutes les offres sont normalisées au format standard :
     "description":  str,
     "url":          str,
     "date_posted":  str,   # YYYY-MM-DD
-    "source":       str,   # "adzuna" | "serpapi" | "indeed_rss"
+    "source":       str,   # "adzuna" | "serpapi" | "indeed_rss" | "jobup"
 }
 
 Usage:
@@ -27,6 +28,7 @@ Usage:
 import hashlib
 import json
 import logging
+import re
 import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -43,6 +45,7 @@ from config.settings import (
     SERPAPI_KEY,
     USE_ADZUNA,
     USE_INDEED_RSS,
+    USE_JOBUP,
     USE_SERPAPI,
 )
 
@@ -67,7 +70,7 @@ def _normalize_date(raw: str) -> str:
 
 
 class JobCollector:
-    """Collecte les offres d'emploi depuis Adzuna, SerpApi et Indeed RSS."""
+    """Collecte les offres d'emploi depuis Adzuna, SerpApi, Indeed RSS et JobUp.ch."""
 
     def __init__(self):
         self.queries = self._load_queries()
@@ -90,6 +93,7 @@ class JobCollector:
             "adzuna":      {"fetched": 0, "kept": 0},
             "serpapi":     {"fetched": 0, "kept": 0, "requests": 0},
             "indeed_rss":  {"fetched": 0, "kept": 0},
+            "jobup":       {"fetched": 0, "kept": 0},
             "total_raw":   0,
             "total_dedup": 0,
         }
@@ -124,6 +128,16 @@ class JobCollector:
             stats["indeed_rss"]["kept"] = len(jobs)
             all_jobs.extend(jobs)
             logger.info(f"Indeed RSS : {stats['indeed_rss']['fetched']} fetched, {stats['indeed_rss']['kept']} kept")
+
+        if USE_JOBUP:
+            jobs = self._collect_jobup()
+            stats["jobup"]["fetched"] = len(jobs)
+            jobs = self._filter_by_date(jobs)
+            stats["jobup"]["kept"] = len(jobs)
+            all_jobs.extend(jobs)
+            logger.info(f"JobUp.ch : {stats['jobup']['fetched']} fetched, {stats['jobup']['kept']} kept")
+        else:
+            logger.info("JobUp.ch : désactivé")
 
         stats["total_raw"] = len(all_jobs)
 
@@ -216,12 +230,6 @@ class JobCollector:
                 n_requests += 1
                 data = resp.json()
                 for item in data.get("jobs_results", []):
-                    # Extraction date SerpApi (detect_extensions.posted_at peut être "1 day ago" etc.)
-                    date_posted = ""
-                    extensions = item.get("detected_extensions", {})
-                    posted_at  = extensions.get("posted_at", "")
-                    # On ne filtre pas ici sur la date car SerpApi "today" filtre déjà
-                    # share_link absent si l'offre n'a pas de lien direct → fallback apply_options
                     url = item.get("share_link", "")
                     if not url:
                         apply_opts = item.get("apply_options", [])
@@ -260,14 +268,12 @@ class JobCollector:
             try:
                 feed = feedparser.parse(rss_url)
                 for entry in feed.entries:
-                    # Date depuis published_parsed (struct_time)
                     if hasattr(entry, "published_parsed") and entry.published_parsed:
                         dt = datetime(*entry.published_parsed[:6])
                         date_posted = dt.strftime("%Y-%m-%d")
                     else:
                         date_posted = date.today().isoformat()
 
-                    # feedparser : entry.source est un FeedParserDict, pas un dict Python standard
                     company = ""
                     if hasattr(entry, "source") and hasattr(entry.source, "get"):
                         company = entry.source.get("value", "")
@@ -283,6 +289,168 @@ class JobCollector:
                     })
             except Exception as e:
                 logger.warning(f"Indeed RSS erreur ({query['keywords']}): {e}")
+
+        return jobs
+
+    # ------------------------------------------------------------------
+    # JobUp.ch
+    # ------------------------------------------------------------------
+
+    def _collect_jobup(self) -> list[dict]:
+        """Collecte les offres via scraping JobUp.ch.
+
+        Stratégie :
+          1. Extrait le JSON embarqué dans <script id="__NEXT_DATA__"> (Next.js SSR).
+             Plusieurs chemins tentés pour couvrir les variations de structure.
+          2. Fallback BeautifulSoup : parcourt les liens <a href="/fr/emplois/detail/...">
+             pour récupérer UUIDs + titres même si la structure JSON change.
+
+        Pas de clé API requise. Les URLs de détail jobup.ch sont accessibles
+        directement via HTTP (confirmé : https://www.jobup.ch/fr/emplois/detail/[UUID]/).
+        """
+        from bs4 import BeautifulSoup
+
+        jobs     = []
+        seen_ids = set()
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "fr-CH,fr;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+        }
+
+        # Déduplique les mots-clés (évite d'envoyer N×locations de requêtes identiques)
+        seen_kw: set[str] = set()
+        unique_queries: list[dict] = []
+        for q in self.queries:
+            kw = q["keywords"].lower()
+            if kw not in seen_kw:
+                seen_kw.add(kw)
+                unique_queries.append(q)
+
+        for query in unique_queries:
+            params = {
+                "term":             query["keywords"],
+                "publication_date": min(MAX_DAYS_OLD, 7),  # max 7 jours sur jobup
+            }
+            try:
+                resp = requests.get(
+                    "https://www.jobup.ch/fr/emplois/",
+                    params=params,
+                    headers=headers,
+                    timeout=API_TIMEOUT,
+                )
+                resp.raise_for_status()
+                html = resp.text
+                page_jobs: list[dict] = []
+
+                # ── 1. __NEXT_DATA__ JSON (Next.js SSR) ──────────────────────
+                m = re.search(
+                    r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>',
+                    html,
+                    re.DOTALL,
+                )
+                if m:
+                    try:
+                        data       = json.loads(m.group(1))
+                        page_props = data.get("props", {}).get("pageProps", {})
+
+                        # Plusieurs chemins possibles selon la version du frontend
+                        raw_list = (
+                            page_props.get("jobs")
+                            or page_props.get("jobResults", {}).get("jobs")
+                            or page_props.get("results")
+                            or page_props.get("searchResults", {}).get("jobs")
+                            or page_props.get("data", {}).get("jobs")
+                            or []
+                        )
+
+                        for item in raw_list:
+                            slug = str(item.get("id", "") or item.get("slug", ""))
+                            if not slug or slug in seen_ids:
+                                continue
+                            seen_ids.add(slug)
+
+                            job_url = f"https://www.jobup.ch/fr/emplois/detail/{slug}/"
+                            title   = item.get("title", "") or item.get("jobTitle", "")
+
+                            company_raw = item.get("company", {})
+                            company = (
+                                company_raw.get("name", "")
+                                if isinstance(company_raw, dict)
+                                else str(company_raw or "")
+                            )
+
+                            loc_raw = item.get("location", {})
+                            location = (
+                                loc_raw.get("name", "") if isinstance(loc_raw, dict)
+                                else str(loc_raw or "")
+                            ) or item.get("place", "") or query["location"]
+
+                            date_posted = _normalize_date(
+                                item.get("publicationDate", "")
+                                or item.get("createdAt", "")
+                            ) or date.today().isoformat()
+
+                            if title:
+                                page_jobs.append({
+                                    "id":          _job_id(job_url, title),
+                                    "title":       title,
+                                    "company":     company,
+                                    "location":    location,
+                                    "description": item.get("description", "") or item.get("teaser", ""),
+                                    "url":         job_url,
+                                    "date_posted": date_posted,
+                                    "source":      "jobup",
+                                })
+
+                    except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                        logger.debug(f"JobUp.ch __NEXT_DATA__ parse error: {e}")
+
+                # ── 2. Fallback BeautifulSoup (liens de détail) ──────────────
+                if not page_jobs:
+                    soup = BeautifulSoup(html, "html.parser")
+                    for a_tag in soup.select('a[href*="/fr/emplois/detail/"]'):
+                        href = a_tag.get("href", "")
+                        m2   = re.search(r"/fr/emplois/detail/([\w-]+)/", href)
+                        if not m2:
+                            continue
+                        slug = m2.group(1)
+                        if slug in seen_ids:
+                            continue
+                        seen_ids.add(slug)
+
+                        title = a_tag.get_text(strip=True)
+                        if not title or len(title) < 4:
+                            continue
+
+                        job_url = (
+                            f"https://www.jobup.ch{href}"
+                            if href.startswith("/")
+                            else href
+                        )
+                        page_jobs.append({
+                            "id":          _job_id(job_url, title),
+                            "title":       title,
+                            "company":     "",
+                            "location":    query["location"],
+                            "description": "",
+                            "url":         job_url,
+                            "date_posted": date.today().isoformat(),
+                            "source":      "jobup",
+                        })
+
+                jobs.extend(page_jobs)
+                logger.debug(f"JobUp.ch '{query['keywords']}' : {len(page_jobs)} offres")
+                time.sleep(1.0)  # Politesse envers le serveur
+
+            except requests.RequestException as e:
+                logger.warning(f"JobUp.ch erreur ({query['keywords']}): {e}")
 
         return jobs
 

@@ -14,6 +14,7 @@ import json
 import logging
 import sys
 import time
+import traceback
 from datetime import date
 from pathlib import Path
 
@@ -174,10 +175,17 @@ def run_daily_pipeline(dry_run: bool = False) -> dict:
         logger.info(f"=== Pipeline terminé en {run_log['duration_seconds']}s ===")
 
     except Exception as e:
+        tb_str = traceback.format_exc()
         run_log["error"]   = str(e)
         run_log["success"] = False
         run_log["duration_seconds"] = round(time.time() - t_start, 1)
         logger.error(f"Pipeline échoué : {e}", exc_info=True)
+
+        # Notification par email — fail-safe : ne doit jamais masquer l'erreur originale
+        try:
+            JobEmailer().send_error(str(e), tb_str, run_date)
+        except Exception as notify_err:
+            logger.warning(f"Email d'erreur non envoyé : {notify_err}")
 
     _save_log(run_log, LOGS_DIR, run_date)
     return run_log

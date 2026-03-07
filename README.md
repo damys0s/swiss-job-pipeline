@@ -108,11 +108,12 @@ L'index est **pré-construit** dans `data/vectorstore/` — pas besoin de relanc
 **Objectif :** Recevoir chaque matin un email avec les 10 meilleures offres du jour.
 
 **Pipeline :**
-1. **Collecte** — Adzuna API + SerpApi Google Jobs (RSS Indeed désactivé depuis 2024)
+1. **Collecte** — Adzuna API + SerpApi Google Jobs + JobUp.ch (scraping HTML, sans clé API)
 2. **Déduplication** — SQLite (`stage3_agent/data/seen_jobs.db`) — évite les doublons inter-runs
 3. **Classification** — GPT-4o-mini fine-tuné — filtre `NOT_RELEVANT`
 4. **Scoring** — Similarité cosine offre × profil candidat (`stage3_agent/config/profile.json`)
 5. **Email** — HTML formaté avec badges couleur, barres de score, liens directs
+6. **Monitoring** — Email d'alerte automatique `🚨 PIPELINE FAILURE` en cas d'exception non récupérée
 
 ```bash
 cd stage3_agent
@@ -228,13 +229,15 @@ python -m streamlit run dashboard.py
 **Onglet "Offres pipeline"** — offres reçues par email, marquage candidaté en un clic (checkbox).
 
 **Onglet "Mes candidatures"** — suivi manuel complet :
-- Ajout d'une candidature (formulaire intégré)
-- Édition de l'état directement dans la table (menu déroulant)
+- Ajout d'une candidature avec champ **Catégorie** (DATA / BI / SUPPORT / LOGISTIQUE / AI)
+- **Édition inline complète** — entreprise, poste, lieu, URL, catégorie, état, commentaire modifiables directement dans la table
+- **Historique d'état** — chaque changement est horodaté dans une table `application_history` ; visible en bas de l'onglet
+- **Filtres** : état, catégorie, entreprise, recherche texte, **plage de dates** (Du / Au)
 - Suppression avec confirmation (mode suppression activable)
-- Filtres par état et recherche texte libre
 - Stats par état en temps réel
+- **Backup cloud** — copie automatique vers OneDrive/Dropbox si `BACKUP_CLOUD_PATH` est défini dans `.env`
 
-Toutes les données sont stockées dans `stage3_agent/data/seen_jobs.db` (SQLite).
+Données stockées dans `stage3_agent/data/tracker.db` (SQLite, gitignored).
 
 ---
 
@@ -246,7 +249,7 @@ Toutes les données sont stockées dans `stage3_agent/data/seen_jobs.db` (SQLite
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (384 dims, FR+EN) |
 | Vector store | FAISS IndexFlatIP (exact search) |
 | LLM RAG | Claude claude-sonnet-4-6 (Anthropic) |
-| Collecte | Adzuna API + SerpApi Google Jobs |
+| Collecte | Adzuna API + SerpApi Google Jobs + JobUp.ch (scraping BeautifulSoup) |
 | Déduplication / Suivi | SQLite |
 | Email | SMTP Gmail + HTML templating |
 | Dashboard | Streamlit |

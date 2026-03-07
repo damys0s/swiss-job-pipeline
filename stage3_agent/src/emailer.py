@@ -93,16 +93,23 @@ def _job_card(job: dict, rank: int) -> str:
 
 def _build_html(jobs: list[dict], stats: dict, run_date: str) -> str:
     """Construit le HTML complet de l'email."""
-    n_found   = stats.get("total_raw", 0)
+    n_found    = stats.get("total_raw", 0)
     n_relevant = stats.get("n_relevant", 0)
-    n_shown   = len(jobs)
+    n_shown    = len(jobs)
 
     cards = "".join(_job_card(j, i + 1) for i, j in enumerate(jobs))
 
-    # Stats footer
-    adzuna_reqs = stats.get("adzuna", {}).get("kept", 0)
-    serpapi_req = stats.get("serpapi", {}).get("requests", 0)
-    indeed_kept = stats.get("indeed_rss", {}).get("kept", 0)
+    # Stats footer — sources actives uniquement
+    src_parts = []
+    if stats.get("adzuna", {}).get("kept", 0):
+        src_parts.append(f"Adzuna ({stats['adzuna']['kept']} offres)")
+    if stats.get("serpapi", {}).get("requests", 0):
+        src_parts.append(f"SerpApi ({stats['serpapi']['requests']} req.)")
+    if stats.get("jobup", {}).get("kept", 0):
+        src_parts.append(f"JobUp.ch ({stats['jobup']['kept']} offres)")
+    if stats.get("indeed_rss", {}).get("kept", 0):
+        src_parts.append(f"Indeed RSS ({stats['indeed_rss']['kept']} offres)")
+    sources_str = " · ".join(src_parts) if src_parts else "aucune source active"
     duration    = stats.get("duration_seconds", 0)
 
     return f"""
@@ -127,7 +134,7 @@ def _build_html(jobs: list[dict], stats: dict, run_date: str) -> str:
   <!-- Footer stats -->
   <div style="background:#eeeeee;padding:12px 24px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;">
     <p style="margin:0;color:#888;font-size:11px;">
-      📊 Sources : Adzuna ({adzuna_reqs} offres) · SerpApi ({serpapi_req} requêtes) · Indeed RSS ({indeed_kept} offres)
+      📊 Sources : {sources_str}
       &nbsp;·&nbsp; Durée : {duration:.1f}s
       &nbsp;·&nbsp; Généré par <strong>job-alert-agent</strong>
     </p>
@@ -138,8 +145,99 @@ def _build_html(jobs: list[dict], stats: dict, run_date: str) -> str:
 """
 
 
+def _build_error_html(error_msg: str, traceback_str: str, run_date: str) -> str:
+    """Construit le HTML de l'email d'alerte erreur pipeline."""
+    tb_safe = (
+        traceback_str
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+    err_safe = error_msg.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    return f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;background:#f5f5f5;">
+
+  <!-- Header rouge -->
+  <div style="background:linear-gradient(135deg,#c62828,#b71c1c);color:white;padding:20px 24px;border-radius:12px 12px 0 0;">
+    <h1 style="margin:0;font-size:22px;">🚨 Pipeline Failure — {run_date}</h1>
+    <p style="margin:6px 0 0 0;opacity:0.9;font-size:14px;">
+      Le pipeline de veille emploi a rencontré une erreur non récupérée.
+    </p>
+  </div>
+
+  <!-- Corps -->
+  <div style="background:white;padding:20px 24px;border:1px solid #e0e0e0;border-top:none;">
+    <h3 style="margin-top:0;color:#c62828;">Erreur</h3>
+    <pre style="background:#fff3f3;border:1px solid #ffcdd2;border-radius:6px;padding:12px;font-size:13px;overflow-x:auto;white-space:pre-wrap;">{err_safe}</pre>
+
+    <h3 style="color:#555;">Traceback complet</h3>
+    <pre style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;padding:12px;font-size:12px;overflow-x:auto;white-space:pre-wrap;">{tb_safe}</pre>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#eeeeee;padding:12px 24px;border-radius:0 0 12px 12px;border:1px solid #e0e0e0;border-top:none;">
+    <p style="margin:0;color:#888;font-size:11px;">
+      Généré par <strong>job-alert-agent</strong>
+      &nbsp;·&nbsp; Consulte les logs GitHub Actions pour plus de détails.
+    </p>
+  </div>
+
+</body>
+</html>
+"""
+
+
 class JobEmailer:
-    """Génère et envoie l'email d'alerte emploi via SMTP Gmail."""
+    """Génère et envoie les emails du pipeline (alertes emploi + erreurs) via SMTP Gmail."""
+
+    def _smtp_send(self, msg: MIMEMultipart) -> bool:
+        """Envoie un message MIME via SMTP. Retourne True si succès."""
+        try:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_ADDRESS, EMAIL_TO, msg.as_string())
+            return True
+        except smtplib.SMTPAuthenticationError:
+            logger.error("Authentification SMTP échouée. Vérifie l'App Password Gmail.")
+            return False
+        except Exception as e:
+            logger.error(f"Erreur SMTP : {e}")
+            return False
+
+    def send_error(self, error_msg: str, traceback_str: str, run_date: str) -> bool:
+        """Envoie un email d'alerte quand le pipeline échoue.
+
+        Args:
+            error_msg:     Message de l'exception.
+            traceback_str: Traceback formaté (traceback.format_exc()).
+            run_date:      Date du run (YYYY-MM-DD).
+
+        Returns:
+            True si l'email a été envoyé avec succès.
+        """
+        if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+            logger.error("Credentials SMTP manquants — email d'erreur non envoyé")
+            return False
+
+        subject  = f"🚨 [Job Alert] PIPELINE FAILURE — {run_date}"
+        html_body = _build_error_html(error_msg, traceback_str, run_date)
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = EMAIL_ADDRESS
+        msg["To"]      = EMAIL_TO
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        sent = self._smtp_send(msg)
+        if sent:
+            logger.info(f"Email d'erreur envoyé → {EMAIL_TO}")
+        return sent
 
     def send(self, jobs: list[dict], stats: dict) -> bool:
         """Envoie l'email d'alerte.
@@ -171,17 +269,7 @@ class JobEmailer:
         msg["To"]      = EMAIL_TO
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        try:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-                server.sendmail(EMAIL_ADDRESS, EMAIL_TO, msg.as_string())
+        sent = self._smtp_send(msg)
+        if sent:
             logger.info(f"Email envoyé : {n_shown} offres → {EMAIL_TO}")
-            return True
-        except smtplib.SMTPAuthenticationError:
-            logger.error("Authentification SMTP échouée. Vérifie l'App Password Gmail.")
-            return False
-        except Exception as e:
-            logger.error(f"Erreur SMTP : {e}")
-            return False
+        return sent

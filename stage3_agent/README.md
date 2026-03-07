@@ -10,18 +10,19 @@
 ```
 Adzuna API ──┐
 SerpApi      ├──► Collecte ──► Déduplication ──► Classification ──► Scoring ──► Email
-Indeed RSS ──┘    (24h)        (SQLite)          (GPT-4o-mini      (FAISS +     (Gmail
+JobUp.ch ────┘    (24h)        (SQLite)          (GPT-4o-mini      (FAISS +     (Gmail
                                                   fine-tuné)        cosine sim)  SMTP)
 ```
 
 **Pipeline quotidien (automatique via GitHub Actions à 7h CET) :**
 
-1. **Collecte** — interroge Adzuna API et SerpApi Google Jobs avec 8 requêtes configurables
+1. **Collecte** — Adzuna API, SerpApi Google Jobs et JobUp.ch (scraping HTML, sans clé API)
 2. **Déduplication** — filtre les offres déjà vues (base SQLite `seen_jobs.db`)
 3. **Classification** — étiquette chaque offre : `DATA_ENGINEERING`, `BI_ANALYTICS` ou `NOT_RELEVANT` via un modèle GPT-4o-mini fine-tuné sur 351 offres suisses
 4. **Scoring** — calcule la similarité cosine entre chaque offre et le profil candidat (embeddings `paraphrase-multilingual-MiniLM-L12-v2`)
 5. **Email** — envoie un email HTML avec le top 10 des offres, badges colorés par catégorie et barres de score
 6. **Historique** — marque les offres vues dans `seen_jobs.db` pour éviter les doublons le lendemain
+7. **Monitoring** — en cas d'exception non récupérée, un email `🚨 PIPELINE FAILURE` est envoyé automatiquement avec le traceback complet
 
 ---
 
@@ -39,11 +40,13 @@ Indeed RSS ──┘    (24h)        (SQLite)          (GPT-4o-mini      (FAISS 
 
 | Fichier | Rôle |
 |---------|------|
-| `src/collector.py` | Collecte multi-sources (Adzuna, SerpApi, Indeed RSS) |
+| `src/collector.py` | Collecte multi-sources (Adzuna, SerpApi, JobUp.ch) |
 | `src/deduplicator.py` | Déduplication inter-runs via SQLite |
 | `src/scorer.py` | Orchestration classify → filter → score |
-| `src/emailer.py` | Génération HTML + envoi SMTP Gmail |
-| `src/pipeline.py` | Orchestration complète + log JSON |
+| `src/emailer.py` | Génération HTML + envoi SMTP Gmail (alertes emploi + erreurs pipeline) |
+| `src/pipeline.py` | Orchestration complète + log JSON + notification d'erreur |
+| `src/tracker.py` | Suivi manuel des candidatures (SQLite `tracker.db`) + historique d'état |
+| `dashboard.py` | Dashboard Streamlit local (offres pipeline + suivi candidatures) |
 | `config/settings.py` | Configuration centralisée (clés API, seuils, chemins) |
 | `config/profile.json` | Profil candidat (compétences, localisations préférées) |
 | `config/search_queries.json` | Requêtes de recherche paramétrables |
@@ -54,6 +57,7 @@ Indeed RSS ──┘    (24h)        (SQLite)          (GPT-4o-mini      (FAISS 
 |--------|------|-----------|--------|
 | [Adzuna API](https://developer.adzuna.com) | REST API | ~5-10 | ✅ Actif |
 | [SerpApi Google Jobs](https://serpapi.com) | REST API | ~40 | ✅ Actif |
+| [JobUp.ch](https://www.jobup.ch) | Scraping HTML (BeautifulSoup) | ~10-20 | ✅ Actif |
 | Indeed RSS | RSS | 0 | ❌ Désactivé (Indeed bloque depuis 2024) |
 
 ---
@@ -69,18 +73,14 @@ Indeed RSS ──┘    (24h)        (SQLite)          (GPT-4o-mini      (FAISS 
 ### Installation locale
 
 ```bash
-git clone https://github.com/<username>/job-alert-agent.git
-cd job-alert-agent
+git clone https://github.com/<username>/swiss-job-pipeline.git
+cd swiss-job-pipeline/stage3_agent
 pip install -r requirements.txt
 ```
 
 ### Configuration locale (`.env`)
 
-```bash
-cp .env.example .env  # ou créer .env manuellement
-```
-
-Contenu du `.env` :
+Créer un fichier `.env` à la racine du repo :
 
 ```env
 ADZUNA_APP_ID=xxxx
@@ -90,11 +90,14 @@ OPENAI_API_KEY=sk-xxxx
 EMAIL_ADDRESS=toncompte@gmail.com
 EMAIL_PASSWORD=xxxx xxxx xxxx xxxx   # App Password Gmail (16 chars)
 EMAIL_TO=destinataire@gmail.com
+
+# Optionnel : backup cloud du tracker de candidatures
+BACKUP_CLOUD_PATH=C:/Users/Toi/OneDrive/Documents/job_backups
 ```
 
 ### Configuration GitHub Actions (production)
 
-Dans **Settings → Secrets and variables → Actions**, créer les 7 secrets ci-dessus.
+Dans **Settings → Secrets and variables → Actions**, créer les 7 secrets ci-dessus (sans `BACKUP_CLOUD_PATH` qui est local uniquement).
 
 ---
 
@@ -113,8 +116,11 @@ python src/pipeline.py --dry-run
 ### Scripts de test unitaires
 
 ```bash
-# Tester la collecte seule (affiche les offres brutes)
-python scripts/test_collect.py
+# Tester chaque source séparément
+python scripts/test_collect.py --source adzuna
+python scripts/test_collect.py --source serpapi
+python scripts/test_collect.py --source jobup     # Test scraping JobUp.ch
+python scripts/test_collect.py --source all --save
 
 # Tester le scoring seul
 python scripts/test_score.py
@@ -136,6 +142,27 @@ Le workflow `.github/workflows/daily_alert.yml` s'exécute :
 - **Automatiquement** : tous les jours à 6h UTC (7h CET / 8h CEST)
 - **Manuellement** : Actions → Daily Job Alert → Run workflow
 
+En cas d'échec, un email `🚨 [Job Alert] PIPELINE FAILURE` est envoyé automatiquement avec l'erreur et le traceback complet.
+
+### Dashboard local
+
+```bash
+cd stage3_agent
+python -m streamlit run dashboard.py
+```
+
+**Onglet "Offres pipeline"** — offres reçues par email, marquage candidaté en un clic.
+
+**Onglet "Mes candidatures"** — suivi manuel complet :
+- Ajout avec champ **Catégorie** (DATA / BI / SUPPORT / LOGISTIQUE / AI)
+- **Édition inline complète** — entreprise, poste, lieu, URL, catégorie, état, commentaire modifiables directement dans la table
+- **Historique d'état** — chaque changement est horodaté (`application_history`) ; consultable en bas de l'onglet
+- **Filtres** : état, catégorie, entreprise, recherche texte, **plage de dates** (Du / Au)
+- Suppression avec confirmation
+- **Backup cloud** — copie quotidienne vers OneDrive/Dropbox si `BACKUP_CLOUD_PATH` défini
+
+**Onglet "Statistiques"** — graphiques par état, par catégorie, activité hebdomadaire, top entreprises.
+
 ### Personnalisation
 
 **Modifier les requêtes de recherche** → `config/search_queries.json` :
@@ -155,11 +182,15 @@ Le workflow `.github/workflows/daily_alert.yml` s'exécute :
 }
 ```
 
-**Ajuster les seuils** → `config/settings.py` :
+**Activer/désactiver les sources** → `config/settings.py` :
 ```python
-TOP_N_RESULTS = 10    # Nombre d'offres dans l'email
-MIN_SCORE     = 0.30  # Seuil minimal de score cosine
-MAX_DAYS_OLD  = 1     # Fenêtre de collecte (jours)
+USE_ADZUNA     = True
+USE_SERPAPI    = True
+USE_JOBUP      = True   # Scraping JobUp.ch (pas de clé API requise)
+USE_INDEED_RSS = False  # Indeed bloque depuis 2024
+TOP_N_RESULTS  = 10     # Nombre d'offres dans l'email
+MIN_SCORE      = 0.30   # Seuil minimal de score cosine
+MAX_DAYS_OLD   = 1      # Fenêtre de collecte (jours)
 ```
 
 ---
@@ -177,10 +208,6 @@ MAX_DAYS_OLD  = 1     # Fenêtre de collecte (jours)
 | Durée totale | 70s |
 | Email envoyé | ✅ |
 
-### Email reçu
-
-> *[Ajouter screenshot ici après le premier vrai run automatique]*
-
 ### Logs d'exécution
 
 Les logs JSON sont générés dans `logs/runs/YYYY-MM-DD.json` à chaque run :
@@ -188,7 +215,7 @@ Les logs JSON sont générés dans `logs/runs/YYYY-MM-DD.json` à chaque run :
 {
   "date": "2026-03-03",
   "steps": {
-    "collect":   {"total_dedup": 39, "n_relevant": 31},
+    "collect":   {"adzuna": {"kept": 8}, "serpapi": {"kept": 28}, "jobup": {"kept": 12}, "total_dedup": 39},
     "dedup":     {"n_new": 39, "n_in_history": 0},
     "score":     {"n_top": 10},
     "email":     {"sent": true}
@@ -200,30 +227,6 @@ Les logs JSON sont générés dans `logs/runs/YYYY-MM-DD.json` à chaque run :
 
 ---
 
-## Lien avec le pipeline global
-
-Ce projet est l'**étape 3** d'un pipeline de veille emploi en 3 étapes :
-
-```
-scraper_offres_suisse/
-├── job-classifier-finetuning/   ← Étape 1 : Fine-tuning GPT-4o-mini
-│   └── Corpus 351 offres → modèle ft:gpt-4o-mini (87% accuracy)
-│
-├── job-rag-assistant/           ← Étape 2 : Système RAG
-│   └── FAISS + Claude → questions/réponses sur les offres
-│       Hit rate 68%, MRR 0.62
-│
-└── job-alert-agent/             ← Étape 3 : Agent de veille (ce projet)
-    └── Réutilise le classificateur (étape 1) + les embeddings FAISS (étape 2)
-        pour envoyer automatiquement les meilleures offres chaque matin
-```
-
-**Flux de réutilisation :**
-- Le **modèle fine-tuné** (étape 1) est appelé via `src/classify.py` pour filtrer les offres non pertinentes
-- L'**index FAISS** (étape 2) sert de référence pour scorer les offres par similarité avec le profil candidat
-
----
-
 ## Stack technique
 
 | Composant | Technologie |
@@ -231,7 +234,9 @@ scraper_offres_suisse/
 | Classification | GPT-4o-mini fine-tuné (OpenAI) |
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (sentence-transformers) |
 | Vector search | FAISS IndexFlatIP |
+| Collecte | Adzuna API + SerpApi + JobUp.ch (BeautifulSoup) |
 | Déduplication | SQLite (stdlib) |
 | Email | SMTP Gmail + App Password |
+| Dashboard | Streamlit |
 | Automatisation | GitHub Actions (cron quotidien) |
 | Python | 3.11 (CI) / 3.14 (dev local) |

@@ -1,7 +1,7 @@
 """
 tracker.py — Suivi manuel des candidatures (SQLite)
 ====================================================
-Gère la table `applications` dans seen_jobs.db.
+Gère les tables `applications` et `application_history` dans tracker.db.
 Indépendant du pipeline — données saisies manuellement via le dashboard.
 
 Table : applications
@@ -15,19 +15,28 @@ Table : applications
   - contact TEXT
   - commentaire TEXT
   - description TEXT
+  - categorie TEXT     (DATA | BI | SUPPORT | LOGISTIQUE | AI | "")
   - created_at TEXT   (ISO date de création de l'entrée)
+
+Table : application_history
+  - id INTEGER PRIMARY KEY AUTOINCREMENT
+  - app_id INTEGER (FK → applications.id)
+  - ancien_etat TEXT
+  - nouvel_etat TEXT
+  - changed_at TEXT   (ISO datetime)
 """
 
 import shutil
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
-from config.settings import TRACKER_DB_PATH
+from config.settings import BACKUP_CLOUD_PATH, TRACKER_DB_PATH
 
 
 def backup_tracker_db(db_path: Path = TRACKER_DB_PATH) -> Path | None:
-    """Copie tracker.db dans un sous-dossier backups/ horodaté (une fois par jour)."""
+    """Copie tracker.db dans un sous-dossier backups/ horodaté (une fois par jour).
+    Copie aussi dans BACKUP_CLOUD_PATH si configuré."""
     if not db_path.exists():
         return None
     backup_dir = db_path.parent / "backups"
@@ -36,10 +45,18 @@ def backup_tracker_db(db_path: Path = TRACKER_DB_PATH) -> Path | None:
     if dest.exists():
         return None  # déjà sauvegardé aujourd'hui
     shutil.copy2(db_path, dest)
-    # Garde les 30 derniers backups
+    # Garde les 30 derniers backups locaux
     old = sorted(backup_dir.glob("tracker_*.db"))[:-30]
     for f in old:
         f.unlink()
+    # Backup cloud (OneDrive, Dropbox, etc.)
+    if BACKUP_CLOUD_PATH:
+        cloud_dir = Path(BACKUP_CLOUD_PATH)
+        try:
+            cloud_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(db_path, cloud_dir / dest.name)
+        except Exception:
+            pass  # ne pas planter si le cloud est inaccessible
     return dest
 
 
@@ -64,6 +81,8 @@ class ApplicationTracker:
         "J'ai reçu une réponse négative": "#EF4444",
     }
 
+    CATEGORIES = ["DATA", "BI", "SUPPORT", "LOGISTIQUE", "AI"]
+
     def __init__(self, db_path: Path = TRACKER_DB_PATH):
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,13 +102,26 @@ class ApplicationTracker:
                     contact     TEXT DEFAULT '',
                     commentaire TEXT DEFAULT '',
                     description TEXT DEFAULT '',
+                    categorie   TEXT DEFAULT '',
                     created_at  TEXT
                 )
             """)
-            # Migration : ajoute la colonne si elle n'existait pas encore
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS application_history (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    app_id      INTEGER NOT NULL,
+                    ancien_etat TEXT,
+                    nouvel_etat TEXT NOT NULL,
+                    changed_at  TEXT NOT NULL,
+                    FOREIGN KEY (app_id) REFERENCES applications(id) ON DELETE CASCADE
+                )
+            """)
+            # Migrations : ajoute les colonnes manquantes sur bases existantes
             cols = [r[1] for r in conn.execute("PRAGMA table_info(applications)").fetchall()]
             if "description" not in cols:
                 conn.execute("ALTER TABLE applications ADD COLUMN description TEXT DEFAULT ''")
+            if "categorie" not in cols:
+                conn.execute("ALTER TABLE applications ADD COLUMN categorie TEXT DEFAULT ''")
             conn.commit()
 
     def add(
@@ -103,14 +135,15 @@ class ApplicationTracker:
         contact: str = "",
         commentaire: str = "",
         description: str = "",
+        categorie: str = "",
     ) -> int:
         today = date.today().isoformat()
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO applications
-                   (entreprise, poste, url, lieu, etat, date_envoi, contact, commentaire, description, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                (entreprise, poste, url, lieu, etat, date_envoi or today, contact, commentaire, description, today),
+                   (entreprise, poste, url, lieu, etat, date_envoi, contact, commentaire, description, categorie, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                (entreprise, poste, url, lieu, etat, date_envoi or today, contact, commentaire, description, categorie, today),
             )
             conn.commit()
             return cursor.lastrowid
@@ -120,15 +153,61 @@ class ApplicationTracker:
             conn.execute("DELETE FROM applications WHERE id=?", (app_id,))
             conn.commit()
 
-    def update_etat(self, app_id: int, etat: str):
+    def update_etat(self, app_id: int, etat: str, old_etat: str = None):
+        """Met à jour l'état et enregistre le changement dans l'historique."""
+        now = datetime.now().isoformat(timespec="seconds")
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE applications SET etat=? WHERE id=?", (etat, app_id))
+            conn.execute(
+                "INSERT INTO application_history (app_id, ancien_etat, nouvel_etat, changed_at) VALUES (?,?,?,?)",
+                (app_id, old_etat, etat, now),
+            )
             conn.commit()
 
     def update_commentaire(self, app_id: int, commentaire: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE applications SET commentaire=? WHERE id=?", (commentaire, app_id))
             conn.commit()
+
+    def update_fields(self, app_id: int, **fields):
+        """Met à jour un ensemble de champs libres (entreprise, poste, lieu, url, categorie, contact, commentaire).
+        N'utilise PAS cette méthode pour etat — passer par update_etat pour l'historique."""
+        allowed = {"entreprise", "poste", "lieu", "url", "categorie", "contact", "commentaire"}
+        filtered = {k: v for k, v in fields.items() if k in allowed}
+        if not filtered:
+            return
+        sets = ", ".join(f"{k}=?" for k in filtered)
+        values = list(filtered.values()) + [app_id]
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(f"UPDATE applications SET {sets} WHERE id=?", values)
+            conn.commit()
+
+    def get_history(self, app_id: int = None, limit: int = 50) -> list[dict]:
+        """Retourne l'historique des changements d'état.
+        Si app_id est fourni, filtre sur cette candidature."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            if app_id is not None:
+                rows = conn.execute(
+                    """SELECT h.id, h.app_id, a.entreprise, a.poste,
+                              h.ancien_etat, h.nouvel_etat, h.changed_at
+                       FROM application_history h
+                       JOIN applications a ON h.app_id = a.id
+                       WHERE h.app_id=?
+                       ORDER BY h.changed_at DESC""",
+                    (app_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """SELECT h.id, h.app_id, a.entreprise, a.poste,
+                              h.ancien_etat, h.nouvel_etat, h.changed_at
+                       FROM application_history h
+                       JOIN applications a ON h.app_id = a.id
+                       ORDER BY h.changed_at DESC
+                       LIMIT ?""",
+                    (limit,),
+                ).fetchall()
+        return [dict(row) for row in rows]
 
     def normalize_entreprises(self) -> int:
         """Unifie la casse des noms d'entreprise : casing majoritaire par groupe."""
@@ -153,19 +232,33 @@ class ApplicationTracker:
     def auto_close_stale(self, days: int = 42) -> int:
         """Passe en 'J'ai reçu une réponse négative' les candidatures restées
         en 'J'ai postulé' ou 'J'ai relancé' sans retour après `days` jours."""
-        from datetime import date, timedelta
+        from datetime import timedelta
         cutoff = (date.today() - timedelta(days=days)).isoformat()
+        now = datetime.now().isoformat(timespec="seconds")
+        new_etat = "J'ai reçu une réponse négative"
         with sqlite3.connect(self.db_path) as conn:
-            cur = conn.execute(
-                """UPDATE applications
-                   SET etat = 'J''ai reçu une réponse négative'
+            affected = conn.execute(
+                """SELECT id, etat FROM applications
                    WHERE etat IN ('J''ai postulé', 'J''ai relancé')
                      AND date_envoi IS NOT NULL
                      AND date_envoi <= ?""",
                 (cutoff,),
-            )
+            ).fetchall()
+            if affected:
+                conn.execute(
+                    """UPDATE applications
+                       SET etat = 'J''ai reçu une réponse négative'
+                       WHERE etat IN ('J''ai postulé', 'J''ai relancé')
+                         AND date_envoi IS NOT NULL
+                         AND date_envoi <= ?""",
+                    (cutoff,),
+                )
+                conn.executemany(
+                    "INSERT INTO application_history (app_id, ancien_etat, nouvel_etat, changed_at) VALUES (?,?,?,?)",
+                    [(row[0], row[1], new_etat, now) for row in affected],
+                )
             conn.commit()
-            return cur.rowcount
+        return len(affected)
 
     def get_all(self) -> list[dict]:
         with sqlite3.connect(self.db_path) as conn:
@@ -183,4 +276,9 @@ class ApplicationTracker:
                     "SELECT etat, COUNT(*) FROM applications GROUP BY etat"
                 ).fetchall()
             )
-        return {"total": total, "by_etat": by_etat}
+            by_categorie = dict(
+                conn.execute(
+                    "SELECT categorie, COUNT(*) FROM applications GROUP BY categorie"
+                ).fetchall()
+            )
+        return {"total": total, "by_etat": by_etat, "by_categorie": by_categorie}

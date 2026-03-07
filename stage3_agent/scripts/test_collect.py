@@ -9,6 +9,7 @@ Usage (depuis la racine du projet job-alert-agent/) :
     python scripts/test_collect.py --source adzuna
     python scripts/test_collect.py --source serpapi
     python scripts/test_collect.py --source indeed
+    python scripts/test_collect.py --source jobup
     python scripts/test_collect.py --source all --save  # Sauvegarde JSON
 """
 
@@ -232,9 +233,142 @@ def test_indeed():
         return []
 
 
+def test_jobup():
+    print("\n" + "="*60)
+    print("SOURCE : JobUp.ch (scraping)")
+    print("="*60)
+
+    import re
+    import time
+    import requests
+    from config.settings import API_TIMEOUT
+
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        print("  ✗ beautifulsoup4 non installé — pip install beautifulsoup4")
+        return []
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "fr-CH,fr;q=0.9,en;q=0.8",
+    }
+
+    # Test sur un seul mot-clé pour ne pas surcharger
+    test_keyword = "Data Analyst"
+    url = "https://www.jobup.ch/fr/emplois/"
+    params = {"term": test_keyword, "publication_date": 7}
+
+    print(f"  Requête : {url}?term={test_keyword}&publication_date=7")
+
+    try:
+        resp = requests.get(url, params=params, headers=headers, timeout=API_TIMEOUT)
+        resp.raise_for_status()
+        html = resp.text
+        print(f"  → HTTP {resp.status_code} — {len(html):,} caractères reçus")
+
+        # Stratégie 1 : __NEXT_DATA__
+        m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL)
+        jobs = []
+        strategy = "aucune"
+
+        if m:
+            try:
+                data       = json.loads(m.group(1))
+                page_props = data.get("props", {}).get("pageProps", {})
+                raw_list   = (
+                    page_props.get("jobs")
+                    or page_props.get("jobResults", {}).get("jobs")
+                    or page_props.get("results")
+                    or page_props.get("searchResults", {}).get("jobs")
+                    or page_props.get("data", {}).get("jobs")
+                    or []
+                )
+                if raw_list:
+                    strategy = "__NEXT_DATA__ JSON"
+                    from src.collector import _job_id, _normalize_date
+                    for item in raw_list[:10]:
+                        slug    = str(item.get("id", "") or item.get("slug", ""))
+                        title   = item.get("title", "") or item.get("jobTitle", "")
+                        company_raw = item.get("company", {})
+                        company = (
+                            company_raw.get("name", "") if isinstance(company_raw, dict)
+                            else str(company_raw or "")
+                        )
+                        jobs.append({
+                            "id":          _job_id(f"https://www.jobup.ch/fr/emplois/detail/{slug}/", title),
+                            "title":       title,
+                            "company":     company,
+                            "location":    (item.get("location") or {}).get("name", "CH"),
+                            "description": item.get("teaser", "") or item.get("description", ""),
+                            "url":         f"https://www.jobup.ch/fr/emplois/detail/{slug}/",
+                            "date_posted": _normalize_date(
+                                item.get("publicationDate", "") or item.get("createdAt", "")
+                            ) or "",
+                            "source":      "jobup",
+                        })
+                else:
+                    print(f"  ⚠️  __NEXT_DATA__ trouvé mais aucun job dans les chemins attendus")
+                    # Affiche les clés disponibles dans pageProps pour diagnostiquer
+                    print(f"     Clés pageProps : {list(page_props.keys())[:10]}")
+            except (json.JSONDecodeError, AttributeError) as e:
+                print(f"  ⚠️  __NEXT_DATA__ parse error : {e}")
+        else:
+            print("  ⚠️  __NEXT_DATA__ non trouvé dans la page")
+
+        # Stratégie 2 : BeautifulSoup fallback
+        if not jobs:
+            strategy = "BeautifulSoup (liens href)"
+            soup = BeautifulSoup(html, "html.parser")
+            seen = set()
+            for a_tag in soup.select('a[href*="/fr/emplois/detail/"]')[:10]:
+                href = a_tag.get("href", "")
+                m2   = re.search(r"/fr/emplois/detail/([\w-]+)/", href)
+                if not m2:
+                    continue
+                slug = m2.group(1)
+                if slug in seen:
+                    continue
+                seen.add(slug)
+                title = a_tag.get_text(strip=True)
+                if title and len(title) >= 4:
+                    jobs.append({
+                        "id":          slug,
+                        "title":       title,
+                        "company":     "",
+                        "location":    "CH",
+                        "description": "",
+                        "url":         f"https://www.jobup.ch{href}" if href.startswith("/") else href,
+                        "date_posted": "",
+                        "source":      "jobup",
+                    })
+
+        print(f"  Stratégie : {strategy}")
+        print(f"  → {len(jobs)} offres trouvées")
+
+        for i, job in enumerate(jobs[:5]):
+            print_job(job, i)
+
+        if not jobs:
+            print("  ⚠️  Aucune offre extraite.")
+            print("     → JobUp.ch a peut-être changé sa structure HTML.")
+            print("     → Inspecte manuellement la page ou ouvre une issue.")
+
+        return jobs
+
+    except Exception as e:
+        print(f"  ✗ JobUp.ch ERREUR : {e}")
+        return []
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", choices=["adzuna", "serpapi", "indeed", "all"], default="all")
+    parser.add_argument("--source", choices=["adzuna", "serpapi", "indeed", "jobup", "all"], default="all")
     parser.add_argument("--save", action="store_true", help="Sauvegarde les résultats en JSON")
     args = parser.parse_args()
 
@@ -254,6 +388,10 @@ def main():
 
     if args.source in ("indeed", "all"):
         jobs = test_indeed()
+        all_jobs.extend(jobs)
+
+    if args.source in ("jobup", "all"):
+        jobs = test_jobup()
         all_jobs.extend(jobs)
 
     print("\n" + "="*60)

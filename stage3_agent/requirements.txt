@@ -11,6 +11,7 @@ numpy>=1.26.0
 # --- HTTP & parsing ---
 requests>=2.31.0
 feedparser>=6.0.10              # Indeed RSS
+beautifulsoup4>=4.12.0          # JobUp.ch scraping
 
 # --- Config & utils ---
 python-dotenv>=1.0.0
