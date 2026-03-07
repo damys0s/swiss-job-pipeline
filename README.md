@@ -144,20 +144,36 @@ Le pipeline tourne automatiquement chaque jour à 06h00 UTC via `.github/workflo
 
 ## Installation rapide
 
+### Via Docker (recommandé)
+
 ```bash
 git clone https://github.com/VOTRE_USERNAME/swiss-job-pipeline.git
 cd swiss-job-pipeline
 cp .env.example .env
 # Éditer .env avec vos clés API
 
-# Stage 3 uniquement (pipeline opérationnel) :
+docker compose build              # Premier build (~10-15 min, modèle d'embedding inclus)
+docker compose up dry-run         # Test sans envoi d'email
+docker compose up agent           # Run complet
+```
+
+> **Note :** Le build est long la première fois (PyTorch CPU + modèle `paraphrase-multilingual-MiniLM-L12-v2` bake dans l'image). Les runs suivants démarrent en quelques secondes.
+
+### Via Python directement
+
+```bash
+git clone https://github.com/VOTRE_USERNAME/swiss-job-pipeline.git
+cd swiss-job-pipeline
+cp .env.example .env
+# Éditer .env avec vos clés API
+
 pip install -r stage3_agent/requirements.txt
 python stage3_agent/src/pipeline.py --dry-run
 ```
 
 ### Prérequis
 
-- Python 3.11+ (3.14 supporté pour les stages 1 et 2, voir notes)
+- Docker Desktop (recommandé) **ou** Python 3.11+
 - Clé API OpenAI (classificateur GPT-4o-mini fine-tuné)
 - Compte Gmail avec App Password (stage 3 uniquement)
 - Clés Adzuna et SerpApi (optionnel — pour recollecte)
@@ -212,4 +228,5 @@ from shared.retriever import JobRetriever     # FAISS similarity search
 | Déduplication | SQLite |
 | Email | SMTP Gmail + HTML templating |
 | CI/CD | GitHub Actions (cron quotidien) |
-| Python | 3.11 (CI) / 3.14 (local) |
+| Conteneurisation | Docker (python:3.11-slim, user non-root, modèle bake) |
+| Python | 3.11 (Docker/CI) / 3.14 (local) |

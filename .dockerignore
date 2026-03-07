@@ -1,0 +1,46 @@
+# ============================================================
+# .dockerignore — swiss-job-pipeline
+# Exclut du build context ce qui ne doit pas entrer dans l'image
+# ============================================================
+
+# Secrets — jamais dans l'image
+.env
+
+# Git
+.git/
+.gitignore
+
+# Stages non opérationnels (non utilisés par le Dockerfile)
+stage1_classifier/
+stage2_rag/
+
+# Données persistantes montées en volume (pas bakées dans l'image)
+stage3_agent/data/seen_jobs.db
+stage3_agent/logs/runs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Docs
+CLAUDE.md
+*.md

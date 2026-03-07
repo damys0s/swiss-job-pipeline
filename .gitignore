@@ -32,6 +32,12 @@ stage3_agent/data/email_preview.html
 .DS_Store
 Thumbs.db
 
+#Claude.md
+CLAUDE.md
+
+# Docker
+.cache/
+
 # Fichiers engagés volontairement (ne PAS exclure) :
 # - data/labeled/labeled_jobs.csv      → corpus annoté
 # - data/training/*.jsonl              → données d'entraînement

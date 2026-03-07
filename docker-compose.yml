@@ -1,0 +1,33 @@
+# ============================================================
+# docker-compose.yml — swiss-job-pipeline
+#
+# Usage :
+#   docker compose up agent        → run complet (collecte + email)
+#   docker compose up dry-run      → test sans email ni mise à jour DB
+#   docker compose build           → rebuilder l'image après modif code
+# ============================================================
+
+services:
+
+  # --- Run complet (usage prod / cron local) ------------------
+  agent:
+    build: .
+    image: swiss-job-pipeline:latest
+    env_file: .env
+    volumes:
+      # seen_jobs.db : déduplication persistante entre les runs
+      - ./stage3_agent/data:/app/stage3_agent/data
+      # Logs JSON de chaque run
+      - ./stage3_agent/logs:/app/stage3_agent/logs
+    restart: "no"   # Pas de redémarrage automatique — cron géré en dehors
+
+  # --- Dry-run (test sans effets de bord) ---------------------
+  # Pas de build: — réutilise l'image construite par le service agent
+  dry-run:
+    image: swiss-job-pipeline:latest
+    env_file: .env
+    volumes:
+      - ./stage3_agent/data:/app/stage3_agent/data
+      - ./stage3_agent/logs:/app/stage3_agent/logs
+    command: ["python", "stage3_agent/src/pipeline.py", "--dry-run"]
+    restart: "no"
