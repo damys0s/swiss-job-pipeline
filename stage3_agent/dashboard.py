@@ -115,8 +115,21 @@ def load_applications() -> pd.DataFrame:
     df["date_envoi"] = pd.to_datetime(df["date_envoi"], errors="coerce").dt.date
     # Supprimer les dates aberrantes (avant 2020)
     df.loc[df["date_envoi"].notna() & (df["date_envoi"] < date(2020, 1, 1)), "date_envoi"] = None
+    today = date.today()
+    df["_jours"] = df["date_envoi"].apply(lambda d: (today - d).days if pd.notna(d) else None)
+    df["_relance"] = (
+        (df["etat"] == "J'ai postulé")
+        & df["_jours"].notna()
+        & (df["_jours"] >= 10)
+        & df["contact"].fillna("").str.strip().ne("")
+    )
     return df
 
+
+# ── Clôture automatique des candidatures sans retour après 6 semaines ────────
+_closed = tracker.auto_close_stale(days=42)
+if _closed:
+    st.toast(f"⏳ {_closed} candidature(s) classée(s) automatiquement en réponse négative (6 semaines écoulées).")
 
 # ── Hero header ───────────────────────────────────────────────────────────────
 stats_db   = dedup.get_stats()
@@ -242,9 +255,10 @@ with tab2:
             url_new     = st.text_input("URL de l'offre")
             contact     = st.text_input("Contact (nom / email / tél)")
             commentaire = st.text_area("Commentaire", height=80)
+            description = st.text_area("Description du poste", height=120)
 
             submitted = st.form_submit_button(
-                "Ajouter la candidature", type="primary", use_container_width=True
+                "Ajouter la candidature", type="primary", use_container_width=False
             )
             if submitted:
                 if entreprise.strip() and poste.strip():
@@ -253,6 +267,7 @@ with tab2:
                         url_new.strip(), lieu.strip(),
                         etat_new, str(date_envoi),
                         contact.strip(), commentaire.strip(),
+                        description.strip(),
                     )
                     st.success(f"✓ Candidature ajoutée : {entreprise} — {poste}")
                     st.cache_data.clear()
@@ -266,67 +281,127 @@ with tab2:
     if df_apps.empty:
         st.info("Aucune candidature. Utilisez le formulaire ci-dessus pour en ajouter.")
     else:
-        fa1, fa2, fa3 = st.columns([2, 2, 2])
-        filtre_etat = fa1.selectbox("Filtrer par état", ["Tous"] + ApplicationTracker.ETATS)
-        search_app  = fa2.text_input("Rechercher", placeholder="entreprise, poste, lieu…", key="s_app")
-        show_delete = fa3.checkbox("Mode suppression", value=False)
+        fa1, fa2 = st.columns([3, 1])
+        etats_defaut = [e for e in ApplicationTracker.ETATS if e != "J'ai reçu une réponse négative"]
+        filtre_etats = fa1.multiselect(
+            "États affichés",
+            options=ApplicationTracker.ETATS,
+            default=etats_defaut,
+        )
+        show_delete = fa2.checkbox("Mode suppression", value=False)
+
+        # Déduplique les noms d'entreprise de façon insensible à la casse (première occurrence gagne)
+        _seen: dict[str, str] = {}
+        for name in df_apps["entreprise"].dropna().str.strip():
+            if name.lower() not in _seen:
+                _seen[name.lower()] = name
+        entreprises_dispo = sorted(_seen.values(), key=str.lower)
+
+        fb1, fb2 = st.columns([2, 4])
+        filtre_entreprise = fb1.selectbox("Entreprise", ["Toutes"] + entreprises_dispo)
+        search_app        = fb2.text_input("Rechercher", placeholder="poste, lieu, commentaire…", key="s_app")
 
         display = df_apps.copy()
-        if filtre_etat != "Tous":
-            display = display[display["etat"] == filtre_etat]
+        if filtre_etats:
+            display = display[display["etat"].isin(filtre_etats)]
+        else:
+            display = display.iloc[0:0]  # rien sélectionné = rien affiché
+        if filtre_entreprise != "Toutes":
+            display = display[display["entreprise"].str.lower() == filtre_entreprise.lower()]
         if search_app:
             mask = (
-                display["entreprise"].fillna("").str.contains(search_app, case=False)
-                | display["poste"].fillna("").str.contains(search_app, case=False)
+                display["poste"].fillna("").str.contains(search_app, case=False)
                 | display["lieu"].fillna("").str.contains(search_app, case=False)
+                | display["commentaire"].fillna("").str.contains(search_app, case=False)
+                | display["description"].fillna("").str.contains(search_app, case=False)
             )
             display = display[mask]
 
-        st.caption(f"{len(display)} candidature(s) · Modifiez l'état directement dans la colonne État.")
+        # Alerte relances J+10 (calculée sur toutes les candidatures, pas seulement la vue filtrée)
+        relance_global = df_apps[df_apps["_relance"]] if "_relance" in df_apps.columns else pd.DataFrame()
+        if not relance_global.empty:
+            noms = ", ".join(
+                f"{r['entreprise']} ({r['_jours']}j)"
+                for _, r in relance_global.sort_values("_jours", ascending=False).head(5).iterrows()
+            )
+            plus = f" + {len(relance_global) - 5} autres" if len(relance_global) > 5 else ""
+            st.info(f"⏰ **{len(relance_global)} relance(s) à faire (J+10 dépassé)** : {noms}{plus}")
+
+        # Graphique hebdomadaire
+        with st.expander("📊 Activité par semaine"):
+            df_chart = df_apps.dropna(subset=["date_envoi"]).copy()
+            df_chart["semaine"] = pd.to_datetime(df_chart["date_envoi"]).dt.to_period("W").dt.start_time
+            chart_data = df_chart.groupby("semaine").size().rename("Candidatures envoyées")
+            st.bar_chart(chart_data)
+
+        # Export CSV + normalisation
+        csv_bytes = display[["date_envoi", "entreprise", "poste", "etat", "lieu", "url", "contact", "commentaire"]].to_csv(index=False).encode("utf-8")
+        tool_c1, tool_c2 = st.columns([2, 5])
+        tool_c1.download_button("⬇️ Exporter CSV", data=csv_bytes, file_name="candidatures.csv", mime="text/csv")
+        if tool_c2.button("🔤 Normaliser noms d'entreprise"):
+            n = tracker.normalize_entreprises()
+            st.success(f"✓ {n} entrée(s) normalisée(s).")
+            st.cache_data.clear()
+            st.rerun()
+
+        st.caption(f"{len(display)} candidature(s) · États et commentaires éditables directement dans la table.")
 
         if display.empty:
             st.info("Aucune candidature pour ce filtre.")
         else:
-            original_etats = display.set_index("id")["etat"].to_dict()
+            display = display.reset_index(drop=True)
+            original_etats       = display.set_index("id")["etat"].to_dict()
+            original_commentaires = display.set_index("id")["commentaire"].to_dict()
             display["_supprimer"] = False
+            display["_alerte"]    = display["_relance"].map({True: "⚠️ J+10", False: ""})
 
-            base_cols = ["date_envoi", "entreprise", "poste", "etat", "lieu", "url", "commentaire"]
+            base_cols = ["_alerte", "date_envoi", "entreprise", "poste", "etat", "lieu", "url", "commentaire", "description"]
             cols_show = (["_supprimer"] if show_delete else []) + base_cols
             cols_show = [c for c in cols_show if c in display.columns]
 
             col_cfg = {
-                "_supprimer": st.column_config.CheckboxColumn("🗑️",           width="small"),
+                "_supprimer": st.column_config.CheckboxColumn("🗑️",            width="small"),
+                "_alerte":    st.column_config.TextColumn("Alerte",            width="small"),
                 "date_envoi": st.column_config.DateColumn("Date", format="DD/MM/YYYY", width="small"),
-                "entreprise": st.column_config.TextColumn("Entreprise",       width="medium"),
-                "poste":      st.column_config.TextColumn("Poste",            width="large"),
+                "entreprise": st.column_config.TextColumn("Entreprise",        width="small"),
+                "poste":      st.column_config.TextColumn("Poste",             width="medium"),
                 "etat":       st.column_config.SelectboxColumn(
-                                  "État", options=ApplicationTracker.ETATS,   width="medium"),
-                "lieu":       st.column_config.TextColumn("Lieu",             width="small"),
-                "url":        st.column_config.LinkColumn("Lien",             width="small"),
-                "commentaire":st.column_config.TextColumn("Commentaire",      width="medium"),
+                                  "État", options=ApplicationTracker.ETATS,    width="medium"),
+                "lieu":       st.column_config.TextColumn("Lieu",              width="small"),
+                "url":        st.column_config.LinkColumn("Lien",              width="small"),
+                "commentaire":st.column_config.TextColumn("Commentaire",       width="small"),
+                "description":st.column_config.TextColumn("Description offre", width="large"),
             }
 
             edited_apps = st.data_editor(
                 display[cols_show],
                 column_config=col_cfg,
-                disabled=["date_envoi", "entreprise", "poste", "lieu", "url", "commentaire"],
+                disabled=["_alerte", "date_envoi", "entreprise", "poste", "lieu", "url", "description"],
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
                 height=min(600, 60 + len(display) * 38),
                 key="apps_editor",
             )
 
-            # Détecter les changements d'état
+            # Détecter les changements d'état et de commentaire
             changed_etat = 0
+            changed_commentaire = 0
             for i, row in edited_apps.iterrows():
                 app_id = display.iloc[i]["id"]
                 new_etat = row.get("etat")
                 if new_etat and new_etat != original_etats.get(app_id):
                     tracker.update_etat(app_id, new_etat)
                     changed_etat += 1
+                new_commentaire = row.get("commentaire", "")
+                if new_commentaire != original_commentaires.get(app_id, ""):
+                    tracker.update_commentaire(app_id, new_commentaire or "")
+                    changed_commentaire += 1
 
-            if changed_etat:
-                st.success(f"✓ {changed_etat} état(s) mis à jour.")
+            if changed_etat or changed_commentaire:
+                parts = []
+                if changed_etat:        parts.append(f"{changed_etat} état(s)")
+                if changed_commentaire: parts.append(f"{changed_commentaire} commentaire(s)")
+                st.success(f"✓ {' et '.join(parts)} mis à jour.")
                 st.cache_data.clear()
                 st.rerun()
 

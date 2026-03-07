@@ -14,6 +14,7 @@ Table : applications
   - date_envoi TEXT    (ISO date)
   - contact TEXT
   - commentaire TEXT
+  - description TEXT
   - created_at TEXT   (ISO date de création de l'entrée)
 """
 
@@ -63,9 +64,14 @@ class ApplicationTracker:
                     date_envoi  TEXT,
                     contact     TEXT DEFAULT '',
                     commentaire TEXT DEFAULT '',
+                    description TEXT DEFAULT '',
                     created_at  TEXT
                 )
             """)
+            # Migration : ajoute la colonne si elle n'existait pas encore
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(applications)").fetchall()]
+            if "description" not in cols:
+                conn.execute("ALTER TABLE applications ADD COLUMN description TEXT DEFAULT ''")
             conn.commit()
 
     def add(
@@ -78,14 +84,15 @@ class ApplicationTracker:
         date_envoi: str = None,
         contact: str = "",
         commentaire: str = "",
+        description: str = "",
     ) -> int:
         today = date.today().isoformat()
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
                 """INSERT INTO applications
-                   (entreprise, poste, url, lieu, etat, date_envoi, contact, commentaire, created_at)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
-                (entreprise, poste, url, lieu, etat, date_envoi or today, contact, commentaire, today),
+                   (entreprise, poste, url, lieu, etat, date_envoi, contact, commentaire, description, created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (entreprise, poste, url, lieu, etat, date_envoi or today, contact, commentaire, description, today),
             )
             conn.commit()
             return cursor.lastrowid
@@ -99,6 +106,48 @@ class ApplicationTracker:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE applications SET etat=? WHERE id=?", (etat, app_id))
             conn.commit()
+
+    def update_commentaire(self, app_id: int, commentaire: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("UPDATE applications SET commentaire=? WHERE id=?", (commentaire, app_id))
+            conn.commit()
+
+    def normalize_entreprises(self) -> int:
+        """Unifie la casse des noms d'entreprise : casing majoritaire par groupe."""
+        from collections import Counter
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute("SELECT id, entreprise FROM applications").fetchall()
+        groups: dict[str, Counter] = {}
+        for app_id, name in rows:
+            key = name.strip().lower()
+            groups.setdefault(key, Counter())[name.strip()] += 1
+        updated = 0
+        with sqlite3.connect(self.db_path) as conn:
+            for key, counter in groups.items():
+                canonical = counter.most_common(1)[0][0]
+                for app_id, name in rows:
+                    if name.strip().lower() == key and name.strip() != canonical:
+                        conn.execute("UPDATE applications SET entreprise=? WHERE id=?", (canonical, app_id))
+                        updated += 1
+            conn.commit()
+        return updated
+
+    def auto_close_stale(self, days: int = 42) -> int:
+        """Passe en 'J'ai reçu une réponse négative' les candidatures restées
+        en 'J'ai postulé' ou 'J'ai relancé' sans retour après `days` jours."""
+        from datetime import date, timedelta
+        cutoff = (date.today() - timedelta(days=days)).isoformat()
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.execute(
+                """UPDATE applications
+                   SET etat = 'J''ai reçu une réponse négative'
+                   WHERE etat IN ('J''ai postulé', 'J''ai relancé')
+                     AND date_envoi IS NOT NULL
+                     AND date_envoi <= ?""",
+                (cutoff,),
+            )
+            conn.commit()
+            return cur.rowcount
 
     def get_all(self) -> list[dict]:
         with sqlite3.connect(self.db_path) as conn:
