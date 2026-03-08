@@ -1,0 +1,59 @@
+# Airflow local — mode standalone (SQLite + SequentialExecutor)
+# Usage :
+#   docker compose up --build      # premier lancement (build image + init DB)
+#   docker compose up              # relances suivantes
+#   docker compose down            # arrêt
+#
+# UI disponible sur http://localhost:8080  (user: admin)
+# Mot de passe généré au 1er lancement → le lire avec :
+#   docker exec sjp-airflow cat /opt/airflow/standalone_admin_password.txt
+
+services:
+  airflow:
+    build: .
+    image: swiss-job-pipeline-airflow
+    container_name: sjp-airflow
+
+    env_file:
+      - path: ../.env
+        required: false   # ne plante pas si .env absent (CI, etc.)
+
+    environment:
+      # --- Airflow core ---
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "changeme-local-only"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Zurich
+
+      # --- Clés API pipeline (injectées depuis .env à la racine du repo) ---
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY}
+      SERPAPI_KEY: ${SERPAPI_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      # --- Email ---
+      EMAIL_ADDRESS: ${EMAIL_ADDRESS}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      EMAIL_TO: ${EMAIL_TO:-}
+
+      # --- Optionnel ---
+      BACKUP_CLOUD_PATH: ${BACKUP_CLOUD_PATH:-}
+
+    volumes:
+      # DAGs
+      - ./dags:/opt/airflow/dags
+      # Projet entier monté en lecture/écriture (données, logs pipeline, DB)
+      - ..:/opt/pipeline
+      # Persistence Airflow (DB sqlite, logs scheduler)
+      - airflow-data:/opt/airflow
+
+    ports:
+      - "8080:8080"
+
+    command: standalone
+
+    restart: unless-stopped
+
+volumes:
+  airflow-data:

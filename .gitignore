@@ -37,8 +37,12 @@ Thumbs.db
 #Claude.md
 CLAUDE.md
 
-# Docker
+# Docker / Airflow
 .cache/
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/standalone_admin_password.txt
+airflow/logs/
 
 # Fichiers engagés volontairement (ne PAS exclure) :
 # - data/labeled/labeled_jobs.csv      → corpus annoté
