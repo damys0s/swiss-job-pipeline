@@ -141,7 +141,7 @@ class JobCollector:
 
         stats["total_raw"] = len(all_jobs)
 
-        # Déduplication par ID
+        # Déduplication par ID (intra-source : même URL depuis plusieurs requêtes)
         seen_ids = set()
         unique_jobs = []
         for job in all_jobs:
@@ -149,8 +149,23 @@ class JobCollector:
                 seen_ids.add(job["id"])
                 unique_jobs.append(job)
 
+        # Déduplication secondaire par (titre normalisé, entreprise normalisée)
+        # Attrape les doublons cross-sources (même offre remontée par Adzuna ET SerpApi)
+        seen_title_company: set[tuple] = set()
+        deduped_jobs: list[dict] = []
+        for job in unique_jobs:
+            norm_title   = re.sub(r'\s+', ' ', job.get("title",   "").lower().strip())
+            norm_company = re.sub(r'\s+', ' ', job.get("company", "").lower().strip())
+            tc_key = (norm_title, norm_company)
+            if norm_title and tc_key not in seen_title_company:
+                seen_title_company.add(tc_key)
+                deduped_jobs.append(job)
+            elif not norm_title:
+                deduped_jobs.append(job)  # titre vide → on garde, ne peut pas comparer
+        unique_jobs = deduped_jobs
+
         stats["total_dedup"] = len(unique_jobs)
-        logger.info(f"Total : {stats['total_raw']} brut → {stats['total_dedup']} après déduplication interne")
+        logger.info(f"Total : {stats['total_raw']} brut → {stats['total_dedup']} après déduplication interne (URL + titre/entreprise)")
 
         return unique_jobs, stats
 
@@ -235,7 +250,7 @@ class JobCollector:
                         apply_opts = item.get("apply_options", [])
                         url = apply_opts[0].get("link", "") if apply_opts else ""
                     jobs.append({
-                        "id":          _job_id(item.get("job_id", "") or url, item.get("title", "")),
+                        "id":          _job_id(url, item.get("title", "")),
                         "title":       item.get("title", ""),
                         "company":     item.get("company_name", ""),
                         "location":    item.get("location", ""),

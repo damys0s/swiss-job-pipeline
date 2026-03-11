@@ -38,6 +38,25 @@ RELEVANT_LABELS = {"DATA_ENGINEERING", "BI_ANALYTICS"}
 # Mots-clés acceptés même hors des villes préférées (remote, toute la Suisse romande...)
 _LOCATION_WILDCARDS = {"remote", "télétravail", "home office", "switzerland", "suisse", "vaud", "romandie", "hybrid", "hybride"}
 
+# Mots allemands distinctifs dans les offres d'emploi (absents du français et de l'anglais)
+_GERMAN_KEYWORDS = {
+    "stellenanzeige", "stellenangebot", "stelleninserat", "stellenbeschreibung",
+    "kenntnisse", "fähigkeiten", "erfahrung", "anforderungen", "aufgaben",
+    "bewerbung", "bewerber", "bewerben", "unternehmen", "deutschkenntnisse",
+    "abschluss", "verfügen", "wir suchen", "wir bieten", "wir sind ein",
+    "gesucht", "idealerweise", "voraussetzung", "zusammenarbeit",
+    "selbstständig", "teamfähigkeit", "berufserfahrung", "arbeitsort",
+    "pensum", "arbeitspensum",
+}
+_GERMAN_THRESHOLD = 2  # Nombre de mots allemands suffisant pour conclure que c'est en allemand
+
+
+def _is_german(job: dict) -> bool:
+    """Retourne True si l'offre est rédigée en allemand (heuristique par mots-clés)."""
+    text = f"{job.get('title', '')} {job.get('description', '')}".lower()
+    hits = sum(1 for kw in _GERMAN_KEYWORDS if kw in text)
+    return hits >= _GERMAN_THRESHOLD
+
 
 def _is_location_ok(job_location: str, preferred: list[str]) -> bool:
     """Retourne True si la localisation est acceptable selon le profil."""
@@ -141,6 +160,10 @@ class JobScorer:
         # Filtre NOT_RELEVANT
         relevant = [j for j in classified if j.get("label") in RELEVANT_LABELS]
         logger.info(f"  {len(classified)} → {len(relevant)} après filtrage NOT_RELEVANT")
+
+        # Filtre offres en allemand
+        relevant = [j for j in relevant if not _is_german(j)]
+        logger.info(f"  → {len(relevant)} après filtrage offres en allemand")
 
         # Filtre titres exclus (Senior, Lead, Manager...)
         excluded_title_kws = self._profile.get("excluded_title_keywords", [])

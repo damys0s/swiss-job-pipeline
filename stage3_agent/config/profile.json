@@ -22,10 +22,10 @@
   ],
   "negative_keywords": [
     "Kubernetes", "Terraform", "Kafka", "Spark", "Scala",
-    "machine learning", "deep learning", "NLP", "React", "Angular",
+    "NLP", "React", "Angular",
     "Salesforce", "SAP ABAP", "COBOL"
   ],
-  "min_positive_keywords": 2,
+  "min_positive_keywords": 1,
   "max_experience_years": 5,
   "experience_years": 3,
   "languages": ["French", "English", "Spanish"],
